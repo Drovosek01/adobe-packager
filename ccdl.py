@@ -11,15 +11,19 @@
 # + added workaround for broken installer on big sur
 # + made everything even more messy and disgusting
 
-from subprocess import Popen, PIPE
-from collections import OrderedDict
-from xml.etree import ElementTree as ET
-import shutil
-import os
-import json
 import argparse
+import json
+import os
+import shutil
+from collections import OrderedDict
+from subprocess import PIPE, Popen
+from xml.etree import ElementTree as ET
+
 import requests
+
 session = requests.Session()
+
+from tqdm.auto import tqdm
 
 VERSION = 4
 VERSION_STR = '0.1.3'
@@ -472,7 +476,19 @@ if __name__ == '__main__':
         for url in download_urls:
             name = url.split('/')[-1].split('?')[0]
             print('[{}_{}] Downloading {}'.format(s, v, name))
-            dl(os.path.join(product_dir, name), url)
+            #dl(os.path.join(product_dir, name), url)
+            file_path = os.path.join(product_dir, name)
+            response = session.get(url, stream=True, headers=ADOBE_REQ_HEADERS)
+            total_size_in_bytes= int(response.headers.get('content-length', 0))
+            block_size = 1024 #1 Kibibyte
+            progress_bar = tqdm(total=total_size_in_bytes, unit='iB', unit_scale=True)
+            with open(file_path, 'wb') as file:
+                for data in response.iter_content(block_size):
+                    progress_bar.update(len(data))
+                    file.write(data)
+            progress_bar.close()
+            if total_size_in_bytes != 0 and progress_bar.n != total_size_in_bytes:
+                print("ERROR, something went wrong")
 
     print('\nGenerating driver.xml')
 
