@@ -1,24 +1,28 @@
 #!/usr/bin/env python3
 
-# CHANGELOG (0.1.2-hotfix1)
+# CHANGELOG 
+#(0.1.3)
+# + Went back to getting old URL.
+# + Only show Versions actually Downloadable
+# + Shows all Versions avalible
+#
+#(0.1.2-hotfix1)
 # + updated script to work with new api (newer downloads work now)
 # + added workaround for broken installer on big sur
 # + made everything even more messy and disgusting
 
-import argparse
-import json
-import os
-import shutil
+from subprocess import Popen, PIPE
 from collections import OrderedDict
-from subprocess import PIPE, Popen
 from xml.etree import ElementTree as ET
-
+import shutil
+import os
+import json
+import argparse
 import requests
-
 session = requests.Session()
 
 VERSION = 4
-VERSION_STR = '0.1.2-hotfix1'
+VERSION_STR = '0.1.3'
 CODE_QUALITY = 'FUCKING_AWFUL'
 
 INSTALL_APP_APPLE_SCRIPT = '''
@@ -30,60 +34,60 @@ ObjC.import('stdio')
 ObjC.import('stdlib')
 
 ObjC.registerSubclass({
-    name: 'HandleDataAction',
-    methods: {
-        'outData:': {
-            types: ['void', ['id']],
-            implementation: function(sender) {
-                const data = sender.object.availableData
-                if (data.length !== '0') {
-                    const output = $.NSString.alloc.initWithDataEncoding(data, $.NSUTF8StringEncoding).js
-                    const res = parseOutput(output)
-                    if (res) {
-                        switch (res.type) {
-                            case 'progress':
-                                Progress.additionalDescription = `Progress: ${res.data}%`
-                                Progress.completedUnitCount = res.data
-                                break
-                            case 'exit':
-                                if (res.data === 0) {
-                                    $.puts(JSON.stringify({ title: 'Installation succeeded' }))
-                                } else {
-                                    $.puts(JSON.stringify({ title: `Failed with error code ${res.data}` }))
-                                }
-                                $.exit(0)
-                                break
-                        }
-                    }
-                    sender.object.waitForDataInBackgroundAndNotify
-                } else {
-                    $.NSNotificationCenter.defaultCenter.removeObserver(this)
-                }
-            }
-        }
-    }
+  name: 'HandleDataAction',
+  methods: {
+      'outData:': {
+          types: ['void', ['id']],
+          implementation: function(sender) {
+              const data = sender.object.availableData
+              if (data.length !== '0') {
+                  const output = $.NSString.alloc.initWithDataEncoding(data, $.NSUTF8StringEncoding).js
+                  const res = parseOutput(output)
+                  if (res) {
+                      switch (res.type) {
+                          case 'progress':
+                              Progress.additionalDescription = `Progress: ${res.data}%`
+                              Progress.completedUnitCount = res.data
+                              break
+                          case 'exit':
+                              if (res.data === 0) {
+                                  $.puts(JSON.stringify({ title: 'Installation succeeded' }))
+                              } else {
+                                  $.puts(JSON.stringify({ title: `Failed with error code ${res.data}` }))
+                              }
+                              $.exit(0)
+                              break
+                      }
+                  }
+                  sender.object.waitForDataInBackgroundAndNotify
+              } else {
+                  $.NSNotificationCenter.defaultCenter.removeObserver(this)
+              }
+          }
+      }
+  }
 })
 
 function parseOutput(output) {
-    let matches
+  let matches
 
-    matches = output.match(/Progress: ([0-9]{1,3})%/)
-    if (matches) {
-        return {
-            type: 'progress',
-            data: parseInt(matches[1], 10)
-        }
-    }
+  matches = output.match(/Progress: ([0-9]{1,3})%/)
+  if (matches) {
+      return {
+          type: 'progress',
+          data: parseInt(matches[1], 10)
+      }
+  }
 
-    matches = output.match(/Exit Code: ([0-9]{1,3})/)
-    if (matches) {
-        return {
-            type: 'exit',
-            data: parseInt(matches[1], 10)
-        }
-    }
+  matches = output.match(/Exit Code: ([0-9]{1,3})/)
+  if (matches) {
+      return {
+          type: 'exit',
+          data: parseInt(matches[1], 10)
+      }
+  }
 
-    return false
+  return false
 }
 
 function shellescape(a) {
@@ -103,82 +107,82 @@ function shellescape(a) {
 
 
 function run() {
-    const appPath = app.pathTo(this).toString()
-    //const driverPath = appPath.substring(0, appPath.lastIndexOf('/')) + '/products/driver.xml'
-    const driverPath = appPath + '/Contents/Resources/products/driver.xml'
-    const hyperDrivePath = '/Library/Application Support/Adobe/Adobe Desktop Common/HDBox/Setup'
+  const appPath = app.pathTo(this).toString()
+  //const driverPath = appPath.substring(0, appPath.lastIndexOf('/')) + '/products/driver.xml'
+  const driverPath = appPath + '/Contents/Resources/products/driver.xml'
+  const hyperDrivePath = '/Library/Application Support/Adobe/Adobe Desktop Common/HDBox/Setup'
 
-    // The JXA Objective-C bridge is completely broken in Big Sur
-    if (!$.NSProcessInfo && parseFloat(app.doShellScript('sw_vers -productVersion')) >= 11.0) {
-        app.displayAlert('GUI unavailable in Big Sur', {
-            message: 'JXA is currently broken in Big Sur.\\nInstall in Terminal instead?',
-            buttons: ['Cancel', 'Install in Terminal'],
-            defaultButton: 'Install in Terminal',
-            cancelButton: 'Cancel'
-        })
-        const cmd = shellescape([ 'sudo', hyperDrivePath, '--install=1', '--driverXML=' + driverPath ])
-        app.displayDialog('Run this command in Terminal to install (press \\'OK\\' to copy to clipboard)', { defaultAnswer: cmd })
-        app.setTheClipboardTo(cmd)
-        return
-    }
+  // The JXA Objective-C bridge is completely broken in Big Sur
+  if (!$.NSProcessInfo && parseFloat(app.doShellScript('sw_vers -productVersion')) >= 11.0) {
+      app.displayAlert('GUI unavailable in Big Sur', {
+          message: 'JXA is currently broken in Big Sur.\\nInstall in Terminal instead?',
+          buttons: ['Cancel', 'Install in Terminal'],
+          defaultButton: 'Install in Terminal',
+          cancelButton: 'Cancel'
+      })
+      const cmd = shellescape([ 'sudo', hyperDrivePath, '--install=1', '--driverXML=' + driverPath ])
+      app.displayDialog('Run this command in Terminal to install (press \\'OK\\' to copy to clipboard)', { defaultAnswer: cmd })
+      app.setTheClipboardTo(cmd)
+      return
+  }
 
-    const args = $.NSProcessInfo.processInfo.arguments
-    const argv = []
-    const argc = args.count
-    for (var i = 0; i < argc; i++) {
-        argv.push(ObjC.unwrap(args.objectAtIndex(i)))
-    }
-    delete args
+  const args = $.NSProcessInfo.processInfo.arguments
+  const argv = []
+  const argc = args.count
+  for (var i = 0; i < argc; i++) {
+      argv.push(ObjC.unwrap(args.objectAtIndex(i)))
+  }
+  delete args
 
-    const installFlag = argv.indexOf('-y') > -1
+  const installFlag = argv.indexOf('-y') > -1
 
-    if (!installFlag) {
-        app.displayAlert('Adobe Package Installer', {
-            message: 'Start installation now?',
-            buttons: ['Cancel', 'Install'],
-            defaultButton: 'Install',
-            cancelButton: 'Cancel'
-        })
+  if (!installFlag) {
+      app.displayAlert('Adobe Package Installer', {
+          message: 'Start installation now?',
+          buttons: ['Cancel', 'Install'],
+          defaultButton: 'Install',
+          cancelButton: 'Cancel'
+      })
 
-        const output = app.doShellScript(`"${appPath}/Contents/MacOS/applet" -y`, { administratorPrivileges: true })
-        const alert = JSON.parse(output)
-        alert.params ? app.displayAlert(alert.title, alert.params) : app.displayAlert(alert.title)
-        return
-    }
+      const output = app.doShellScript(`"${appPath}/Contents/MacOS/applet" -y`, { administratorPrivileges: true })
+      const alert = JSON.parse(output)
+      alert.params ? app.displayAlert(alert.title, alert.params) : app.displayAlert(alert.title)
+      return
+  }
 
-    const stdout = $.NSPipe.pipe
-    const task = $.NSTask.alloc.init
+  const stdout = $.NSPipe.pipe
+  const task = $.NSTask.alloc.init
 
-    task.executableURL = $.NSURL.alloc.initFileURLWithPath(hyperDrivePath)
-    task.arguments = $(['--install=1', '--driverXML=' + driverPath])
-    task.standardOutput = stdout
+  task.executableURL = $.NSURL.alloc.initFileURLWithPath(hyperDrivePath)
+  task.arguments = $(['--install=1', '--driverXML=' + driverPath])
+  task.standardOutput = stdout
 
-    const dataAction = $.HandleDataAction.alloc.init
-    $.NSNotificationCenter.defaultCenter.addObserverSelectorNameObject(dataAction, 'outData:', $.NSFileHandleDataAvailableNotification, $.initialOutputFile)
+  const dataAction = $.HandleDataAction.alloc.init
+  $.NSNotificationCenter.defaultCenter.addObserverSelectorNameObject(dataAction, 'outData:', $.NSFileHandleDataAvailableNotification, $.initialOutputFile)
 
-    stdout.fileHandleForReading.waitForDataInBackgroundAndNotify
+  stdout.fileHandleForReading.waitForDataInBackgroundAndNotify
 
-    let err = $.NSError.alloc.initWithDomainCodeUserInfo('', 0, '')
-    const ret = task.launchAndReturnError(err)
-    if (!ret) {
-        $.puts(JSON.stringify({
-            title: 'Error',
-            params: {
-                message: 'Failed to launch task: ' + err.localizedDescription.UTF8String
-            }
-        }))
-        $.exit(0)
-    }
+  let err = $.NSError.alloc.initWithDomainCodeUserInfo('', 0, '')
+  const ret = task.launchAndReturnError(err)
+  if (!ret) {
+      $.puts(JSON.stringify({
+          title: 'Error',
+          params: {
+              message: 'Failed to launch task: ' + err.localizedDescription.UTF8String
+          }
+      }))
+      $.exit(0)
+  }
 
-    Progress.description =  "Installing packages..."
-    Progress.additionalDescription = "Preparing…"
-    Progress.totalUnitCount = 100
+  Progress.description =  "Installing packages..."
+  Progress.additionalDescription = "Preparing…"
+  Progress.totalUnitCount = 100
 
-    task.waitUntilExit
+  task.waitUntilExit
 }
 '''
 
-ADOBE_PRODUCTS_XML_URL = 'https://cdn-ffc.oobesaas.adobe.com/core/v5/products/all?_type=xml&channel=ccm,sti&platform=osx10,osx10-64&productType=Desktop'
+ADOBE_PRODUCTS_XML_URL = 'https://cdn-ffc.oobesaas.adobe.com/core/v4/products/all?_type=xml&channel=ccm,sti&platform=macuniversal,osx10-64,osx10&productType=Desktop'
 ADOBE_APPLICATION_JSON_URL = 'https://cdn-ffc.oobesaas.adobe.com/core/v3/applications'
 
 DRIVER_XML = '''<DriverInfo>
@@ -199,7 +203,7 @@ DRIVER_XML = '''<DriverInfo>
 </DriverInfo>
 '''
 
-DRIVER_XML_DEPENDENCY = '''			<Dependency>
+DRIVER_XML_DEPENDENCY = '''         <Dependency>
                 <SAPCode>{sapCode}</SAPCode>
                 <BaseVersion>{version}</BaseVersion>
                 <EsdDirectory>./{sapCode}</EsdDirectory>
@@ -243,7 +247,7 @@ def parse_products_xml(products_xml):
             if p.find('productInfoPage'):
                 print(p.find('productInfoPage').text)
             products[sap] = {
-                'hidden': p.find('platforms/platform').get('id') != 'osx10-64' or parent_map[parent_map[p]].get('name') != 'ccm',
+                'hidden': parent_map[parent_map[p]].get('name') != 'ccm',
                 'displayName': displayName,
                 'sapCode': sap,
                 'versions': OrderedDict()
@@ -282,7 +286,8 @@ if __name__ == '__main__':
     ye = int((32 - len(VERSION_STR)) / 2)
     print('=================================')
     print('= Adobe macOS Package Generator =')
-    print('{} {} {}\n'.format('='*ye, VERSION_STR, '='*(31-len(VERSION_STR)-ye)))
+    print('{} {} {}\n'.format('=' * ye, VERSION_STR,
+          '=' * (31 - len(VERSION_STR) - ye)))
 
     if (not os.path.isfile('/Library/Application Support/Adobe/Adobe Desktop Common/HDBox/Setup')):
         print('Adobe HyperDrive installer not found.\nPlease make sure the Creative Cloud app is installed.')
@@ -339,7 +344,9 @@ if __name__ == '__main__':
 
     if not version:
         for v in reversed(versions.values()):
-            print('{} {}'.format(product['displayName'], v['version']))
+            # prodInfov = versions[v]
+            if v['buildGuid']:
+                print('{} {}'.format(product['displayName'], v['version']))
 
         while version is None:
             val = input('\nPlease enter the desired version (eg. 21.2.3): ')
