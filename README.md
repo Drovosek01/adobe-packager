@@ -1,6 +1,6 @@
 ## What is this and for what
 
-This is a script that allows you to download portable installers of programs from Adobe for macOS with different versions. This can help system administrators who need to install the same program from Adobe on several computers, as well as those people who do not want to use the latest version of programs from Creative Cloud
+This is a script that allows you to download portable installers of programs from Adobe for macOS with different versions. This can help system administrators who need to install the same program from Adobe on several computers, as well as those people who do not want to use the latest version of programs from Creative Cloud.
 
 ## How to use it
 
@@ -18,18 +18,16 @@ This is a script that allows you to download portable installers of programs fro
 
    - to do this, go to the repository folder in the terminal and run this command `chmod +x ccdl.command`
 
-5. In the Finder click 2 times on the `ccdl.command` file and follow the prompts in the terminal
+5. In the Finder double click on the `ccdl.command` file and follow the prompts in the terminal
 
 ## Known issues
 
 - Unable to download the Adobe Acrobat installer
-- For Photoshop (and possibly some other applications), only the Intel version of the application installer is downloaded
 - When using a link to download a v5 xml file the script crashes
 
 ## To Do
 
 - [ ] Find a way to download Adobe Acrobat
-- [ ] Find a way to download Photoshop native for ARM
 - [ ] Fix the script for downloading applications via xml v5
 - [ ] Find the difference between xml v5 and v4
 - [ ] Refactoring the script - split it into different files

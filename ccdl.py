@@ -1,17 +1,28 @@
 #!/usr/bin/env python3
+"""
+This is the Adobe Ofline Package downloader.
 
-# CHANGELOG 
-#(0.1.3)
-# + Went back to getting old URL.
-# + Only show Versions actually Downloadable
-# + Shows all Versions avalible
-#
-#(0.1.2-hotfix1)
-# + updated script to work with new api (newer downloads work now)
-# + added workaround for broken installer on big sur
-# + made everything even more messy and disgusting
+CHANGELOG
+(0.1.4)
++ Added M1 support. Defaults to yes when running on an M1 processor.
++ Added option to make another package after end.
++ Default picks picks newest version if one isn't specified
++ Default picks PhotoShop if nothing is entered, since it was used as the example.
++ Added Platform to version listing.
 
+(0.1.3)
++ Went back to getting old URL.
++ Only show Versions actually Downloadable
++ Shows all Versions avalible
+
+(0.1.2-hotfix1)
++ updated script to work with new api (newer downloads work now)
++ added workaround for broken installer on big sur
++ made everything even more messy and disgusting
+"""
+from tqdm.auto import tqdm
 import argparse
+import platform
 import json
 import os
 import shutil
@@ -23,11 +34,10 @@ import requests
 
 session = requests.Session()
 
-from tqdm.auto import tqdm
 
 VERSION = 4
-VERSION_STR = '0.1.3'
-CODE_QUALITY = 'FUCKING_AWFUL'
+VERSION_STR = '0.1.4'
+CODE_QUALITY = 'Mildly_AWFUL'
 
 INSTALL_APP_APPLE_SCRIPT = '''
 const app = Application.currentApplication()
@@ -186,7 +196,7 @@ function run() {
 }
 '''
 
-ADOBE_PRODUCTS_XML_URL = 'https://cdn-ffc.oobesaas.adobe.com/core/v4/products/all?_type=xml&channel=ccm,sti&platform=macuniversal,osx10-64,osx10&productType=Desktop'
+ADOBE_PRODUCTS_XML_URL = 'https://cdn-ffc.oobesaas.adobe.com/core/v4/products/all?_type=xml&channel=ccm,sti&platform={installPlatform}&productType=Desktop'
 ADOBE_APPLICATION_JSON_URL = 'https://cdn-ffc.oobesaas.adobe.com/core/v3/applications'
 
 DRIVER_XML = '''<DriverInfo>
@@ -194,7 +204,7 @@ DRIVER_XML = '''<DriverInfo>
         <Name>Adobe {name}</Name>
         <SAPCode>{sapCode}</SAPCode>
         <CodexVersion>{version}</CodexVersion>
-        <Platform>osx10-64</Platform>
+        <Platform>{installPlatform}</Platform>
         <EsdDirectory>./{sapCode}</EsdDirectory>
         <Dependencies>
 {dependencies}
@@ -221,22 +231,27 @@ ADOBE_REQ_HEADERS = {
 
 
 def dl(filename, url):
+    """Download files from a url."""
     with session.get(url, stream=True, headers=ADOBE_REQ_HEADERS) as r:
         with open(filename, 'wb') as f:
             shutil.copyfileobj(r.raw, f)
 
 
 def r(url, headers=ADOBE_REQ_HEADERS):
+    """Retrieve a from a url as a string."""
     req = session.get(url, headers=headers)
     req.encoding = 'utf-8'
     return req.text
 
 
-def get_products_xml():
-    return ET.fromstring(r(ADOBE_PRODUCTS_XML_URL))
+def get_products_xml(adobeurl):
+    """First stage of parsing the XML."""
+    print('Source URL is: ' + adobeurl)
+    return ET.fromstring(r(adobeurl))
 
 
 def parse_products_xml(products_xml):
+    """2nd stage of parsing the XML."""
     cdn = products_xml.find('channel/cdn/secure').text
     products = {}
     parent_map = {c: p for p in products_xml.iter() for c in p}
@@ -244,6 +259,8 @@ def parse_products_xml(products_xml):
         displayName = p.find('displayName').text
         sap = p.get('id')
         version = p.get('version')
+        pf = p.find('platforms/platform')
+        appplatform = pf.get('id')
         dependencies = list(
             p.find('platforms/platform/languageSet/dependencies'))
 
@@ -260,33 +277,40 @@ def parse_products_xml(products_xml):
         products[sap]['versions'][version] = {
             'sapCode': sap,
             'version': version,
+            'apPlatform': appplatform,
             'dependencies': [{
                 'sapCode': d.find('sapCode').text, 'version': d.find('baseVersion').text
             } for d in dependencies],
             'buildGuid': p.find('platforms/platform/languageSet').get('buildGuid')
         }
-
     return products, cdn
 
 
+def questiony(question: str) -> bool:
+    """Question prompt default Y."""
+    reply = None
+    while reply not in ("", "y", "n"):
+        reply = input(f"{question} (Y/n): ").lower()
+    return (reply in ("", "y"))
+
+
+def questionn(question: str) -> bool:
+    """Question prompt default N."""
+    reply = None
+    while reply not in ("", "y", "n"):
+        reply = input(f"{question} (y/N): ").lower()
+    return (reply in ("y", "Y"))
+
+
 def get_application_json(buildGuid):
+    """Retrieve JSON."""
     headers = ADOBE_REQ_HEADERS.copy()
     headers['x-adobe-build-guid'] = buildGuid
     return json.loads(r(ADOBE_APPLICATION_JSON_URL, headers))
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-l', '--installLanguage',
-                        help='Language code (eg. en_US)', action='store')
-    parser.add_argument(
-        '-s', '--sapCode', help='SAP code for desired product (eg. PHSP)', action='store')
-    parser.add_argument(
-        '-v', '--version', help='Version of desired product (eg. 21.0.3)', action='store')
-    parser.add_argument('-d', '--destination',
-                        help='Directory to download installation files to', action='store')
-    args = parser.parse_args()
-
+def runccdl():
+    """Main exicution."""
     ye = int((32 - len(VERSION_STR)) / 2)
     print('=================================')
     print('= Adobe macOS Package Generator =')
@@ -297,11 +321,27 @@ if __name__ == '__main__':
         print('Adobe HyperDrive installer not found.\nPlease make sure the Creative Cloud app is installed.')
         exit(1)
 
+    if platform.machine() == 'arm64':
+        ism1 = questiony('Do you want to make M1 packages')
+    else:
+        ism1 = questionn('Do you want to make M1 packages')
+    if ism1:
+        adobeurlm1 = ADOBE_PRODUCTS_XML_URL.format(
+            installPlatform='macarm64,macuniversal')
+    adobeurl = ADOBE_PRODUCTS_XML_URL.format(
+        installPlatform='macuniversal,osx10-64,osx10')
+
     print('Downloading products.xml\n')
-    products_xml = get_products_xml()
+    print(adobeurl)
+    products_xml = get_products_xml(adobeurl)
+    if ism1:
+        products_xmlm1 = get_products_xml(adobeurlm1)
 
     print('Parsing products.xml')
     products, cdn = parse_products_xml(products_xml)
+    if ism1:
+        productsintel = products
+        products, cdn = parse_products_xml(products_xmlm1)
 
     print('CDN: ' + cdn)
     print(
@@ -324,7 +364,7 @@ if __name__ == '__main__':
 
         while sapCode is None:
             val = input(
-                '\nPlease enter the SAP Code of the desired product (eg. PHSP for Photoshop): ')
+                '\nPlease enter the SAP Code of the desired product (eg. PHSP for Photoshop): ') or 'PHSP'
             if val == 'APRO':
                 print(
                     '\033[1;31mAcrobat is currently broken, please sit tight while I try to find a solution.\nAll other products are functional.\033[0m')
@@ -348,12 +388,15 @@ if __name__ == '__main__':
 
     if not version:
         for v in reversed(versions.values()):
-            # prodInfov = versions[v]
+
             if v['buildGuid']:
-                print('{} {}'.format(product['displayName'], v['version']))
+                print(
+                    '{} Platform: {} - {}'.format(product['displayName'], v['apPlatform'], v['version']))
+                lastv = v['version']
 
         while version is None:
-            val = input('\nPlease enter the desired version (eg. 21.2.3): ')
+            val = input(
+                '\nPlease enter the desired version. Nothing for ' + lastv + ': ') or lastv
             if versions.get(val):
                 version = val
             else:
@@ -398,26 +441,33 @@ if __name__ == '__main__':
 
     print('')
 
-    install_app_name = 'Install {}_{}-{}.app'.format(
-        sapCode, version, installLanguage)
-    install_app_path = os.path.join(dest, install_app_name)
+    prodInfo = versions[version]
+    prods_to_download = []
+    dependencies = prodInfo['dependencies']
+    for d in dependencies:
+        try:
+            prods_to_download.append({'sapCode': d['sapCode'], 'version': d['version'],
+                                      'buildGuid': products[d['sapCode']]['versions'][d['version']]['buildGuid']})
+        except:
+            prods_to_download.append({'sapCode': d['sapCode'], 'version': d['version'],
+                                     'buildGuid': productsintel[d['sapCode']]['versions'][d['version']]['buildGuid']})
 
+    prods_to_download.insert(
+        0, {'sapCode': prodInfo['sapCode'], 'version': prodInfo['version'], 'buildGuid': prodInfo['buildGuid']})
+    apPlatform = prodInfo['apPlatform']
+    install_app_name = 'Install {}_{}-{}-{}.app'.format(
+        sapCode, version, installLanguage, apPlatform)
+    install_app_path = os.path.join(dest, install_app_name)
     print('sapCode: ' + sapCode)
     print('version: ' + version)
     print('installLanguage: ' + installLanguage)
     print('dest: ' + install_app_path)
-
-    prodInfo = versions[version]
-    prods_to_download = [{'sapCode': d['sapCode'], 'version': d['version'], 'buildGuid': products[d['sapCode']]
-                          ['versions'][d['version']]['buildGuid']} for d in prodInfo['dependencies']]
-    prods_to_download.insert(
-        0, {'sapCode': prodInfo['sapCode'], 'version': prodInfo['version'], 'buildGuid': prodInfo['buildGuid']})
     print(prods_to_download)
 
     print('\nCreating {}'.format(install_app_name))
 
     install_app_path = os.path.join(
-        dest, 'Install {}_{}-{}.app'.format(sapCode, version, installLanguage))
+        dest, install_app_name)
     with Popen(['/usr/bin/osacompile', '-l', 'JavaScript', '-o', os.path.join(dest, install_app_path)], stdin=PIPE) as p:
         p.communicate(INSTALL_APP_APPLE_SCRIPT.encode('utf-8'))
 
@@ -475,13 +525,16 @@ if __name__ == '__main__':
 
         for url in download_urls:
             name = url.split('/')[-1].split('?')[0]
+            print('Url is: ' + url)
             print('[{}_{}] Downloading {}'.format(s, v, name))
-            #dl(os.path.join(product_dir, name), url)
+            # dl(os.path.join(product_dir, name), url)
             file_path = os.path.join(product_dir, name)
             response = session.get(url, stream=True, headers=ADOBE_REQ_HEADERS)
-            total_size_in_bytes= int(response.headers.get('content-length', 0))
-            block_size = 1024 #1 Kibibyte
-            progress_bar = tqdm(total=total_size_in_bytes, unit='iB', unit_scale=True)
+            total_size_in_bytes = int(
+                response.headers.get('content-length', 0))
+            block_size = 1024  # 1 Kibibyte
+            progress_bar = tqdm(total=total_size_in_bytes,
+                                unit='iB', unit_scale=True)
             with open(file_path, 'wb') as file:
                 for data in response.iter_content(block_size):
                     progress_bar.update(len(data))
@@ -496,6 +549,7 @@ if __name__ == '__main__':
         name=product['displayName'],
         sapCode=prodInfo['sapCode'],
         version=prodInfo['version'],
+        installPlatform=apPlatform,
         dependencies='\n'.join([DRIVER_XML_DEPENDENCY.format(
             sapCode=d['sapCode'],
             version=d['version']
@@ -508,3 +562,22 @@ if __name__ == '__main__':
         f.close()
 
     print('\nPackage successfully created. Run {} to install.'.format(install_app_path))
+    return
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-l', '--installLanguage',
+                        help='Language code (eg. en_US)', action='store')
+    parser.add_argument(
+        '-s', '--sapCode', help='SAP code for desired product (eg. PHSP)', action='store')
+    parser.add_argument(
+        '-v', '--version', help='Version of desired product (eg. 21.0.3)', action='store')
+    parser.add_argument('-d', '--destination',
+                        help='Directory to download installation files to', action='store')
+    args = parser.parse_args()
+
+    runcc = True
+    while runcc:
+        runccdl()
+        runcc = questiony('\n\nDo you want to create another package')
