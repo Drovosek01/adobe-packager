@@ -344,8 +344,19 @@ def runccdl():
         products, cdn = parse_products_xml(products_xmlm1)
 
     print('CDN: ' + cdn)
+    sapCodes = {}
+    for p in products.values():
+        if not p['hidden']:
+            versions = p['versions']
+            version = None
+            lastv = None
+            for v in reversed(versions.values()):
+                if v['buildGuid']:
+                    lastv = v['version']
+            if lastv:
+                sapCodes[p['sapCode']] = p['displayName']
     print(
-        str(len([p for p in products if not products[p]['hidden']])) + ' products found:')
+        str(len(sapCodes)) + ' products found:')
 
     sapCode = None
     if (args.sapCode):
@@ -358,17 +369,13 @@ def runccdl():
     print('')
 
     if not sapCode:
-        for p in products.values():
-            if not p['hidden']:
-                print('[{}] {}'.format(p['sapCode'], p['displayName']))
+        for s, d in sapCodes.items():
+            print('[{}] {}'.format(s, d))
 
         while sapCode is None:
             val = input(
                 '\nPlease enter the SAP Code of the desired product (eg. PHSP for Photoshop): ') or 'PHSP'
-            if val == 'APRO':
-                print(
-                    '\033[1;31mAcrobat is currently broken, please sit tight while I try to find a solution.\nAll other products are functional.\033[0m')
-            elif products.get(val):
+            if products.get(val):
                 sapCode = val
             else:
                 print(
