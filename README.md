@@ -4,21 +4,19 @@ This is a script that allows you to download portable installers of programs fro
 
 ## How to use it
 
-1. For the script to work, the Creative Cloud application must be installed
+1. For the script to work, the Creative Cloud application must be installed.
 
-   - [here](https://helpx.adobe.com/download-install/kb/creative-cloud-desktop-app-download.html) you can find "offline" installers Creative Cloud
+   - [here](https://helpx.adobe.com/download-install/kb/creative-cloud-desktop-app-download.html) for "offline" installer of Creative Cloud under "macOS | Alternative downloads"
 
-2. For the script works Python 3 and XCode (or XCode components) mist be installed
+2. For the script to work, Python 3 and XCode (or XCode components) must be installed
 
    - just run this command `xcode-select --install` in terminal to install it
 
-3. Clone the repository or download files via your browser (and of course unpack archive with files)
+3. Clone the repository `git clone https://github.com/Drovosek01/adobe-packager` or download files via your browser (and of course unpack archive with files)
 
-4. Make the `ccdl.command` file executable
+4. In the Finder double click on the `ccdl.command` file and follow the prompts in the terminal. You can also run the installer in the terminal to have it install into `/Applications/Adobe\ Packager.command`. Note that it needs the folder from github to remain on your system when you installed it.
 
-   - to do this, go to the repository folder in the terminal and run this command `chmod +x ccdl.command`
-
-5. In the Finder double click on the `ccdl.command` file and follow the prompts in the terminal
+5. Be sure to keep your script updated by running `git pull` in the terminal where you have this cloned to.
 
 ## Known issues
 
