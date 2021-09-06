@@ -34,7 +34,7 @@ else
 	echo "${CYAN}installing requests...${RESET}"
 	python3 -m pip install requests --user
 fi
-python -c "import tqdm" || pip3 install tqdm
+python3 -c "import tqdm" || pip3 install --user tqdm 
 # clear
 
 echo "${CYAN}starting ccdl${RESET}"
