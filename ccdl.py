@@ -20,17 +20,28 @@ CHANGELOG
 + added workaround for broken installer on big sur
 + made everything even more messy and disgusting
 """
-from tqdm.auto import tqdm
 import argparse
 import platform
 import json
 import os
 import shutil
+import sys
 from collections import OrderedDict
 from subprocess import PIPE, Popen
 from xml.etree import ElementTree as ET
 
 import requests
+try:
+    from tqdm.auto import tqdm
+except ImportError:
+    print("Trying to Install required module: tqdm\n")
+    os.system('pip3 install --user tqdm')
+    try:
+        from tqdm.auto import tqdm
+    except ImportError:
+        sys.exit("""You need tqdm!
+                install it from http://pypi.python.org/pypi/tqdm
+                or run: pip3 install tqdm.""")
 
 session = requests.Session()
 
