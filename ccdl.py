@@ -333,9 +333,9 @@ def runccdl():
         exit(1)
 
     if platform.machine() == 'arm64':
-        ism1 = questiony('Do you want to make M1 packages')
+        ism1 = questiony('Do you want to make M1 native packages')
     else:
-        ism1 = questionn('Do you want to make M1 packages')
+        ism1 = questionn('Do you want to make M1 native packages')
     if ism1:
         adobeurlm1 = ADOBE_PRODUCTS_XML_URL.format(
             installPlatform='macarm64,macuniversal')
@@ -366,6 +366,10 @@ def runccdl():
                     lastv = v['version']
             if lastv:
                 sapCodes[p['sapCode']] = p['displayName']
+    if ism1:
+        print(
+            'Note: If the Adobe program is not listed here, there is no native M1 version.')
+        print('      Use the non native version with Rosetta 2 until an M1 version is avaliable.')
     print(
         str(len(sapCodes)) + ' products found:')
 
