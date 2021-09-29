@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-This is the Adobe Ofline Package downloader.
+This is the Adobe Offline Package downloader.
 
 CHANGELOG
 (0.1.4)
