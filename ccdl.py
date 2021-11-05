@@ -332,10 +332,16 @@ def runccdl():
         print('Adobe HyperDrive installer not found.\nPlease make sure the Creative Cloud app is installed.')
         exit(1)
 
-    if platform.machine() == 'arm64':
-        ism1 = questiony('Do you want to make M1 native packages')
+    if args.appleSilison:
+        ism1 = True
+    elif args.Intel:
+        ism1 = False
     else:
-        ism1 = questionn('Do you want to make M1 native packages')
+        if platform.machine() == 'arm64':
+            ism1 = questiony('Do you want to make M1 native packages')
+        else:
+            ism1 = questionn('Do you want to make M1 native packages')
+    
     if ism1:
         adobeurlm1 = ADOBE_PRODUCTS_XML_URL.format(
             installPlatform='macarm64,macuniversal')
@@ -597,6 +603,10 @@ if __name__ == '__main__':
         '-v', '--version', help='Version of desired product (eg. 21.0.3)', action='store')
     parser.add_argument('-d', '--destination',
                         help='Directory to download installation files to', action='store')
+    parser.add_argument('-a', '--appleSilison',
+                        help='Explicitly download Apple Silicon binaries', action='store')
+    parser.add_argument('-i', '--Intel',
+                        help='Explicitly download Intel binaries', action='store')
     args = parser.parse_args()
 
     runcc = True
