@@ -11,7 +11,8 @@ from urllib.request import Request
 from typing import Any, List, Union
 from xml.etree import ElementTree as ET
 
-from models.messages import DRIVER_XML, DRIVER_XML_DEPENDENCY, LANGUAGES
+from models.driver import Driver
+from models.messages import DRIVER_XML, DRIVER_XML_DEPENDENCY, LANGUAGES, PRODUCTS_XML
 from models.product import Dependency, Product
 from models.script_template import INSTALL_APP_APPLE_SCRIPT
 
@@ -27,6 +28,8 @@ class APM:
         'User-Agent': 'Adobe Application Manager 2.0',
         'X-Api-Key': 'CC_HD_ESD_1_0'
     }
+
+    icon_path = '/Library/Application Support/Adobe/Adobe Desktop Common/HDBox/Install.app/Contents/Resources/CreativeCloudInstaller.icns'
 
     product_listing = None
 
@@ -97,7 +100,7 @@ class APM:
         products = {}
         p_map = {c: p for p in xml.iter() for c in p}
 
-        for p in xml.findall('channel/products/product'):
+        for p in xml.findall(PRODUCTS_XML):
             if p_map[p_map[p]].get('name') != 'ccm':
                 continue
 
@@ -117,25 +120,12 @@ class APM:
         return products
 
     def _create_driver_xml(self, product: Product, language: str, directory: str) -> None:
-        driver = DRIVER_XML.format(
-            name=product.name,
-            sapCode=product.id,
-            version=product.version,
-            installPlatform=product.platform,
-            dependencies='\n'.join(
-                DRIVER_XML_DEPENDENCY.format(sapCode=d.id, version=d.version)
-                for d in product.dependencies
-            ),
-            language=language
-        )
-
-        with open(os.path.join(directory, 'driver.xml'), 'w') as f:
-            f.write(driver)
+        driver = Driver(product, directory)
+        driver.write()
 
     def _create_icon_path(self, dest: str) -> None:
-        path = '/Library/Application Support/Adobe/Adobe Desktop Common/HDBox/Install.app/Contents/Resources/CreativeCloudInstaller.icns'
-        shutil.copyfile(path, os.path.join(dest,
-                                           'Contents', 'Resources', 'applet.icns'))
+        shutil.copyfile(self.icon_path, os.path.join(dest,
+                                                     'Contents', 'Resources', 'applet.icns'))
 
     def _get_product_xml(self) -> str:
         return self._r(self.url_templates['xml'], self.ADOBE_REQ_HEADERS)
@@ -169,6 +159,7 @@ class APM:
         product_dir = os.path.join(products_dir, item.id)
         app_json_path = os.path.join(product_dir, 'application.json')
         os.makedirs(product_dir, exist_ok=True)
+
         self._create_app_json(app_json_path, item.app_json)
 
     def is_valid_product_code(self, product_code: str) -> bool:
@@ -180,7 +171,7 @@ class APM:
     def is_valid_product_version(self, product_code: str, version: str) -> bool:
         if self.product_listing:
             return version in [v for v in self.product_listing[product_code]['versions']]
-        
+
         return False
 
     def is_valid_product_language(self, language: str) -> bool:
@@ -207,14 +198,20 @@ class APM:
         for index, language in enumerate(LANGUAGES):
             print(f'{index + 1}.', language)
 
-    def download(self, product: Product) -> None:
-        product_json = self._get_product_json(product.buildGuid)
-        download_urls = self._get_download_urls(
-            product_json, product.language, product_json['Cdn']['Secure'])
+    def prepare_install_directories(self, product: Product):
         install_dir = os.path.join('./', product.install_name)
         products_dir = os.path.join(
             install_dir, 'Contents', 'Resources', 'products')
         product_dir = os.path.join(products_dir, product.id)
+
+        return install_dir, products_dir, product_dir
+
+    def download(self, product: Product) -> None:
+        product_json = self._get_product_json(product.buildGuid)
+        download_urls = self._get_download_urls(
+            product_json, product.language, product_json['Cdn']['Secure'])
+        
+        install_dir, products_dir, product_dir = self.prepare_install_directories(product)
 
         self._app_script(product.install_name)
         self._create_icon_path(install_dir)
@@ -225,7 +222,6 @@ class APM:
 
         self._create_directory(product, install_dir)
         self._create_driver_xml(product, product.language, product_dir)
-        
 
         for url in download_urls:
             self._download(os.path.join(product_dir, url['name']), url['path'], int(
