@@ -21,9 +21,10 @@ CHANGELOG
 + made everything even more messy and disgusting
 """
 import argparse
-import platform
 import json
+import locale
 import os
+import platform
 import shutil
 import sys
 from collections import OrderedDict
@@ -31,6 +32,7 @@ from subprocess import PIPE, Popen
 from xml.etree import ElementTree as ET
 
 import requests
+
 try:
     from tqdm.auto import tqdm
 except ImportError:
@@ -45,7 +47,8 @@ except ImportError:
 
 session = requests.Session()
 
-
+oslang = locale.getdefaultlocale()
+oslang = oslang[0]
 VERSION = 4
 VERSION_STR = '0.1.4'
 CODE_QUALITY = 'Mildly_AWFUL'
@@ -321,7 +324,7 @@ def get_application_json(buildGuid):
 
 
 def runccdl():
-    """Main exicution."""
+    """Run Main exicution."""
     ye = int((32 - len(VERSION_STR)) / 2)
     print('=================================')
     print('= Adobe macOS Package Generator =')
@@ -333,7 +336,7 @@ def runccdl():
         exit(1)
 
     if args.arch:
-        if args.arch == "arm64" or args.arch == "m1" or args.arch == "as":
+        if args.arch.lower() == "arm64" or args.arch == "m1" or args.arch == "as":
             ism1 = True
         else:
             ism1 = False
@@ -342,7 +345,7 @@ def runccdl():
             ism1 = questiony('Do you want to make M1 native packages')
         else:
             ism1 = questionn('Do you want to make M1 native packages')
-    
+
     if ism1:
         adobeurlm1 = ADOBE_PRODUCTS_XML_URL.format(
             installPlatform='macarm64,macuniversal')
@@ -477,7 +480,7 @@ def runccdl():
         try:
             prods_to_download.append({'sapCode': d['sapCode'], 'version': d['version'],
                                       'buildGuid': products[d['sapCode']]['versions'][d['version']]['buildGuid']})
-        except:
+        except KeyError:
             prods_to_download.append({'sapCode': d['sapCode'], 'version': d['version'],
                                      'buildGuid': productsintel[d['sapCode']]['versions'][d['version']]['buildGuid']})
 
@@ -545,10 +548,9 @@ def runccdl():
                 download_urls.append(cdn + pkg['Path'])
             else:
                 # TODO: actually parse `Condition` and check it properly (and maybe look for & add support for conditions other than installLanguage)
-                if ((not pkg.get('Condition')) or installLanguage in pkg['Condition']):
+                if ((not pkg.get('Condition')) or installLanguage in pkg['Condition'] or oslang in pkg['Condition']):
                     noncore_pkg_count += 1
                     download_urls.append(cdn + pkg['Path'])
-
         print('[{}_{}] Selected {} core packages and {} non-core packages'.format(s,
               v, core_pkg_count, noncore_pkg_count))
 
