@@ -28,9 +28,9 @@ This is a script that allows you to download portable installers of programs fro
 - [ ] Find a way to download Adobe Acrobat
 - [ ] Fix the script for downloading applications via xml v5
 - [ ] Find the difference between xml v5 and v4
-- [ ] Refactoring the script - split it into different files
+- [✅] Refactoring the script - split it into different files
 - [ ] Make the script fully or partially cross-platform
-- [ ] Make it possible to download all the language packs and select the language of the program during installation
+- [✅] Make it possible to download all the language packs and select the language of the program during installation
 - [ ] Make interactive examples of requests for downloading an xml file in the browser
 
 P.S.
