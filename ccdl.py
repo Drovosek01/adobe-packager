@@ -113,7 +113,7 @@ class APM:
 
         return products
 
-    def _create_driver_xml(self, product: Product, language: str, directory: str):
+    def _create_driver_xml(self, product: Product, language: str, directory: str) -> None:
         driver = DRIVER_XML.format(
             name=product.name,
             sapCode=product.id,
@@ -129,18 +129,18 @@ class APM:
         with open(os.path.join(directory, 'driver.xml'), 'w') as f:
             f.write(driver)
 
-    def _create_icon_path(self, dest: str):
+    def _create_icon_path(self, dest: str) -> None:
         path = '/Library/Application Support/Adobe/Adobe Desktop Common/HDBox/Install.app/Contents/Resources/CreativeCloudInstaller.icns'
         shutil.copyfile(path, os.path.join(dest,
                                            'Contents', 'Resources', 'applet.icns'))
 
-    def _get_product_xml(self):
+    def _get_product_xml(self) -> str:
         return self._r(self.url_templates['xml'], self.ADOBE_REQ_HEADERS)
 
     def _get_product_json(self, buildGuid: str) -> dict[Any, Any]:
         return json.loads(self._r(self.url_templates['json'], {**self.ADOBE_REQ_HEADERS, **{'x-adobe-build-guid': buildGuid}}))
 
-    def get_product_listing(self):
+    def get_product_listing(self) -> None:
         xml_raw = self._get_product_xml()
         xml = self.string_to_xml(xml_raw)
         self.product_listing = self._process_xml(xml)
@@ -156,11 +156,11 @@ class APM:
         with subprocess.Popen(['/usr/bin/osacompile', '-l', 'JavaScript', '-o', install_dir], stdin=subprocess.PIPE) as p:
             p.communicate(INSTALL_APP_APPLE_SCRIPT.encode('utf-8'))
 
-    def _create_app_json(self, json_path: str, app_json: Any):
+    def _create_app_json(self, json_path: str, app_json: Any) -> None:
         with open(json_path, 'w') as f:
             json.dump(app_json, f, separators=(',', ':'))
 
-    def _create_directory(self, item: Union[Product, Dependency], install_dir: str):
+    def _create_directory(self, item: Union[Product, Dependency], install_dir: str) -> None:
         products_dir = os.path.join(
             install_dir, 'Contents', 'Resources', 'products')
         product_dir = os.path.join(products_dir, item.id)
