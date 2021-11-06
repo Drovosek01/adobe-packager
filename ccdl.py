@@ -153,7 +153,7 @@ class APM:
             return self.product_listing[sapCode]['versions'][version]
 
     def _get_download_urls(self, product_json: dict[Any, Any], language: str, cdn: str) -> List[dict[str, str]]:
-        return [{'size': p['DownloadSize'], 'path': f'{cdn}{p["Path"]}', 'name': p['fullPackageName']} for p in product_json['Packages']['Package'] if p['Type'] == 'core' or language in p['Condition']]
+        return [{'size': p['DownloadSize'], 'path': f'{cdn}{p["Path"]}', 'name': p.get('fullPackageName', p.get('PackageName'))} for p in product_json['Packages']['Package'] if p['Type'] == 'core' or language in p['Condition']]
 
     def _app_script(self, install_dir: str):
         with subprocess.Popen(['/usr/bin/osacompile', '-l', 'JavaScript', '-o', install_dir], stdin=subprocess.PIPE) as p:
