@@ -27,16 +27,6 @@ else
 	brew install python
 fi
 
-python3 -c 'import requests' > /dev/null 2>&1
-if [ $? == 0 ]; then
-	echo "${CYAN}requests found!${RESET}"
-else
-	echo "${CYAN}installing requests...${RESET}"
-	python3 -m pip install requests --user
-fi
-python3 -c "import tqdm" || pip3 install --user tqdm 
-# clear
-
 echo "${CYAN}starting ccdl${RESET}"
 cd "$(dirname "$0")"
-python3 "./ccdl.py"
+python3 "./run.py"

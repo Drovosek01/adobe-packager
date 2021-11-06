@@ -64,6 +64,7 @@ class APM:
                     progress, adj_size, speed, percent = self._get_progress(
                         total_bytes, elapsed, size)
 
+                    os.system('clear')
                     print(
                         f'{file_path} -> {progress:.2f} MB / {adj_size:.2f} MB\t{percent:.2f}%\t{speed:.2f} MB\\s', end='\r')
                     f.write(chunk)
@@ -204,7 +205,7 @@ class APM:
 
     def print_product_languages(self):
         for index, language in enumerate(LANGUAGES):
-            print(index + 1, '.', language)
+            print(f'{index + 1}.', language)
 
     def download(self, product: Product) -> None:
         product_json = self._get_product_json(product.buildGuid)
