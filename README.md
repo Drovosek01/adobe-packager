@@ -1,3 +1,5 @@
+Will be making a native swift application for this instead of python
+
 ## What is this and for what
 
 This is a script that allows you to download portable installers of programs from Adobe for macOS with different versions. This can help system administrators who need to install the same program from Adobe on several computers, as well as those people who do not want to use the latest version of programs from Creative Cloud.
