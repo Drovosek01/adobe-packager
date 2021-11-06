@@ -12,9 +12,9 @@ from urllib.request import Request
 from typing import Any, List, Union
 from xml.etree import ElementTree as ET
 
-from messages import DRIVER_XML, DRIVER_XML_DEPENDENCY
-from product import Dependency, Product
-from script_template import INSTALL_APP_APPLE_SCRIPT
+from models.messages import DRIVER_XML, DRIVER_XML_DEPENDENCY
+from models.product import Dependency, Product
+from models.script_template import INSTALL_APP_APPLE_SCRIPT
 
 
 class APM:
