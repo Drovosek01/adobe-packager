@@ -30,5 +30,6 @@ Network Trash Folder
 Temporary Items
 .apdisk
 __pycache__
+.vscode
 
 # End of https://www.toptal.com/developers/gitignore/api/macos
