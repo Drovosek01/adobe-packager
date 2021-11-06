@@ -210,8 +210,9 @@ class APM:
         product_json = self._get_product_json(product.buildGuid)
         download_urls = self._get_download_urls(
             product_json, product.language, product_json['Cdn']['Secure'])
-        
-        install_dir, products_dir, product_dir = self.prepare_install_directories(product)
+
+        install_dir, products_dir, product_dir = self.prepare_install_directories(
+            product)
 
         self._app_script(product.install_name)
         self._create_icon_path(install_dir)
