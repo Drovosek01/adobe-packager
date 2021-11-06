@@ -12,7 +12,7 @@ from typing import Any, List, Union
 from xml.etree import ElementTree as ET
 
 from models.driver import Driver
-from models.messages import DRIVER_XML, DRIVER_XML_DEPENDENCY, LANGUAGES, PRODUCTS_XML
+from models.messages import LANGUAGES, PRODUCTS_XML
 from models.product import Dependency, Product
 from models.script_template import INSTALL_APP_APPLE_SCRIPT
 
