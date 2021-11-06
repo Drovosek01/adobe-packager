@@ -1,4 +1,3 @@
-
 # XML Strings
 CDN_XML = 'channel/cdn/secure'
 PRODUCTS_XML = 'channel/products/product'
