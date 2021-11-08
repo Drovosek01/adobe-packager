@@ -434,13 +434,18 @@ def runccdl():
                     '{} is not a valid version. Please use a value from the list above.'.format(val))
 
     print('')
+    langs = ['en_US', 'en_GB', 'en_IL', 'en_AE', 'es_ES', 'es_MX', 'pt_BR', 'fr_FR', 'fr_CA', 'fr_MA', 'it_IT', 'de_DE', 'nl_NL',
+             'ru_RU', 'uk_UA', 'zh_TW', 'zh_CN', 'ja_JP', 'ko_KR', 'pl_PL', 'hu_HU', 'cs_CZ', 'tr_TR', 'sv_SE', 'nb_NO', 'fi_FI', 'da_DK', 'ALL']
     # Detecting Current set default Os language. Doesn't seem to always work.
     deflocal = locale.getdefaultlocale()
+    deflocal = deflocal[0]
     oslang = None
-    if deflocal[0]:
-        oslang = deflocal[0]
-    langs = ['en_US', 'en_GB', 'en_IL', 'en_AE', 'es_ES', 'es_MX', 'pt_BR', 'fr_FR', 'fr_CA', 'fr_MA', 'it_IT', 'de_DE', 'nl_NL',
-             'ru_RU', 'uk_UA', 'zh_TW', 'zh_CN', 'ja_JP', 'ko_KR', 'pl_PL', 'hu_HU', 'cs_CZ', 'tr_TR', 'sv_SE', 'nb_NO', 'fi_FI', 'da_DK']
+    if deflocal:
+        oslang = deflocal
+    if oslang in langs:
+        deflang = oslang
+    else:
+        deflang = 'en_US'
     installLanguage = None
     if (args.installLanguage):
         if (args.installLanguage in langs):
@@ -453,19 +458,21 @@ def runccdl():
         print('Available languages: {}'.format(', '.join(langs)))
         while installLanguage is None:
             val = input(
-                '\nPlease enter the desired install language, or nothing for [en_US]: ') or 'en_US'
+                f'\nPlease enter the desired install language, or nothing for [{deflang}]: ') or deflang
             if (val in langs):
                 installLanguage = val
             else:
                 print(
                     '{} is not available. Please use a value from the list above.'.format(val))
-    while oslang not in langs:
-        print('Could not detect your default Language for MacOS.')
-        oslang = input(
-            f'\nPlease enter the your OS Language, or nothing for [{installLanguage}]: ') or installLanguage
-        if oslang not in langs:
-            print(
-                '{} is not available. Please use a value from the list above.'.format(oslang))
+    if oslang != installLanguage:
+        if installLanguage != 'ALL':
+            while oslang not in langs:
+                print('Could not detect your default Language for MacOS.')
+                oslang = input(
+                    f'\nPlease enter the your OS Language, or nothing for [{installLanguage}]: ') or installLanguage
+                if oslang not in langs:
+                    print(
+                        '{} is not available. Please use a value from the list above.'.format(oslang))
     dest = None
     if (args.destination):
         print('\nUsing provided destination: ' + args.destination)
@@ -556,9 +563,13 @@ def runccdl():
                 download_urls.append(cdn + pkg['Path'])
             else:
                 # TODO: actually parse `Condition` and check it properly (and maybe look for & add support for conditions other than installLanguage)
-                if ((not pkg.get('Condition')) or installLanguage in pkg['Condition'] or oslang in pkg['Condition']):
+                if installLanguage == "ALL":
                     noncore_pkg_count += 1
                     download_urls.append(cdn + pkg['Path'])
+                else:
+                    if ((not pkg.get('Condition')) or installLanguage in pkg['Condition'] or oslang in pkg['Condition']):
+                        noncore_pkg_count += 1
+                        download_urls.append(cdn + pkg['Path'])
         print('[{}_{}] Selected {} core packages and {} non-core packages'.format(s,
               v, core_pkg_count, noncore_pkg_count))
 
