@@ -47,8 +47,6 @@ except ImportError:
 
 session = requests.Session()
 
-oslang = locale.getdefaultlocale()
-oslang = oslang[0]
 VERSION = 4
 VERSION_STR = '0.1.4'
 CODE_QUALITY = 'Mildly_AWFUL'
@@ -436,7 +434,11 @@ def runccdl():
                     '{} is not a valid version. Please use a value from the list above.'.format(val))
 
     print('')
-
+    # Detecting Current set default Os language. Doesn't seem to always work.
+    deflocal = locale.getdefaultlocale()
+    oslang = None
+    if deflocal[0]:
+        oslang = deflocal[0]
     langs = ['en_US', 'en_GB', 'en_IL', 'en_AE', 'es_ES', 'es_MX', 'pt_BR', 'fr_FR', 'fr_CA', 'fr_MA', 'it_IT', 'de_DE', 'nl_NL',
              'ru_RU', 'uk_UA', 'zh_TW', 'zh_CN', 'ja_JP', 'ko_KR', 'pl_PL', 'hu_HU', 'cs_CZ', 'tr_TR', 'sv_SE', 'nb_NO', 'fi_FI', 'da_DK']
     installLanguage = None
@@ -457,7 +459,13 @@ def runccdl():
             else:
                 print(
                     '{} is not available. Please use a value from the list above.'.format(val))
-
+    while oslang not in langs:
+        print('Could not detect your default Language for MacOS.')
+        oslang = input(
+            f'\nPlease enter the your OS Language, or nothing for [{installLanguage}]: ') or installLanguage
+        if oslang not in langs:
+            print(
+                '{} is not available. Please use a value from the list above.'.format(oslang))
     dest = None
     if (args.destination):
         print('\nUsing provided destination: ' + args.destination)
