@@ -1,6 +1,6 @@
 ## What is this and for what
 
-This is a script that allows you to download portable installers of programs from Adobe for macOS with different versions and different or all languages. This can help system administrators who need to install the same program from Adobe on several computers, as well as those people who do not want to use the latest version of programs from Creative Cloud or install the application on an officially unsupported version of macOS (see instructions partition here).
+This is a script that allows you to download portable installers of programs from Adobe for macOS with different versions and different or all languages. This can help system administrators who need to install the same program from Adobe on several computers, as well as those people who do not want to use the latest version of programs from Creative Cloud or install the application on an officially unsupported version of macOS (see [instructions](#instructions) partition here).
 
 ## How to use it
 
@@ -15,6 +15,8 @@ This is a script that allows you to download portable installers of programs fro
 3. Clone the repository `git clone https://github.com/Drovosek01/adobe-packager` or download files via your browser (and of course unpack archive with files)
 
 4. In the Finder double click on the `ccdl.command` file and follow the prompts in the terminal. You can also run the installer in the terminal to have it install into `/Applications/Adobe\ Packager.command`. Note that it needs the folder from github to remain on your system when you installed it.
+
+   - You also can type `python3` in terminal and type path to `ccdl.py` file or just drop it to terminal window and press Enter. You can add attributes for launch `ccdl.py` file for specific work.
 
 5. Be sure to keep your script updated by running `git pull` in the terminal where you have this cloned to.
 
@@ -46,7 +48,7 @@ At the moment, I do not know the Python language, but I will learn it sometime a
 
 ## Instructions
 
-### How to install an application with all languages or choose a specific installation language if all language packs are downloaded
+### How to install an application with all languages or choose a specific application language if all language packs are downloaded
 
 Firstly, you should take into account that Adobe applications are quite specific and although they are made in approximately the same style, they often differ greatly in the implementation of the interface. For example, whichever language you choose when downloading Lightroom Classic or Media Encoder (tested on versions 10.4 and CC 2021, respectively), after installation they will have the same interface language as the system language and in the application settings you can change the interface language and it will change after restarting the application. Alas, this does not work with Photoshop, Illustrator (it was tested on CC 2021) and many other Adobe applications, and in order to change their interface language, you will have to reinstall the application after downloading it with the necessary language using our Adobe Packager or change the system interface language in the system settings and in the Creative Cloud settings in the "Apps" item to change the language to the same, restart the computer and only then install the application from Creative Cloud with the desired language.
 
@@ -66,7 +68,7 @@ P.S.
 
 To be sure that the application will install exactly with the selected language after changing the text between the "InstallLanguage" tags, you can also delete all language packs except the one selected from the `application.json` folder
 
-### How to install an application on an unsupported version of macOS for installation
+### How to install an application on an unsupported version of macOS
 
 If you don't have the most up-to-date version of macOS (for example, macOS Mojave 10.14.6) if you try to download the latest version of the application from Creative Cloud (for example Adobe InDesign CC 2022 v17.0), then Creative Cloud will give
 an error that the requested version of the application is incompatible with your version of macOS and you need to upgrade (in this situation to macOS 10.15 or newer macOS).
