@@ -39,7 +39,7 @@ This is a script that allows you to download portable installers of programs fro
 - [ ] Refactoring the script - split it into different files
 - [ ] Make the script fully or partially cross-platform
 - [ ] Make interactive examples of requests for downloading an xml file in the browser
-- [x] Make it possible to select the language of the program in installer GUI
+- [ ] Make it possible to select the language of the program in installer GUI
 - [x] Make it possible to download all the language packs
 - [x] Find a way to download Photoshop native for ARM
 
