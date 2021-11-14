@@ -20,10 +20,21 @@ This is a script that allows you to download portable installers of programs fro
 
 5. Be sure to keep your script updated by running `git pull` in the terminal where you have this cloned to.
 
+## Donate
+
+[Sponsor the project](https://donatty.com/drovosek)
+
+You can support this repository at the link above.
+
+P.S.
+
+Yes, I am not the original creator of this script and so far I have only formatted this code, but I will try to share the donation among everyone who took part in writing and correcting this script.
+
 ## Known issues
 
 - Unable to download the Adobe Acrobat installer
 - When using a link to download a v5 xml file the script crashes
+- Postfix `macarm64` can mean `macuniversal` architecture
 
 ## Resolved issues
 
@@ -32,8 +43,6 @@ This is a script that allows you to download portable installers of programs fro
 ## To Do
 
 - [ ] Find a way to download Adobe Acrobat
-- [ ] Find a way to download macuniversal some applications
-  - I know for sure that there was a macuniversal version of the application for Photoshop CC 2021 v22.5.1, but now you can download either Intel or ARM version. Maybe Adobe just stopped releasing macuniversal for some versions of applications?
 - [ ] Fix the script for downloading applications via xml v5
 - [ ] Find the difference between xml v5 and v4
 - [ ] Refactoring the script - split it into different files
