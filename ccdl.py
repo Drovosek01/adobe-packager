@@ -376,8 +376,8 @@ def runccdl():
                 sapCodes[p['sapCode']] = p['displayName']
     if ism1:
         print(
-            'Note: If the Adobe program is not listed here, there is no native M1 version.')
-        print('      Use the non native version with Rosetta 2 until an M1 version is avaliable.')
+            'Note: If the Adobe program is NOT listed here, there is no native M1 version.')
+        print('      Use the non native version with Rosetta 2 until an M1 version is available.')
     print(
         str(len(sapCodes)) + ' products found:')
 
