@@ -27,7 +27,6 @@ import os
 import platform
 import shutil
 import sys
-import pathlib
 from collections import OrderedDict
 from subprocess import PIPE, Popen
 from xml.etree import ElementTree as ET
@@ -637,7 +636,7 @@ if __name__ == '__main__':
     parser.add_argument(
         '-v', '--version', help='Version of desired product (eg. 21.0.3)', action='store')
     parser.add_argument('-d', '--destination',
-                        help='Directory to download installation files to', action='store', type=pathlib.Path)
+                        help='Directory to download installation files to', action='store')
     parser.add_argument('-a', '--arch',
                         help='Set the architecture to download', action='store')
     parser.add_argument('--ignoreNoCreativeCloud',
