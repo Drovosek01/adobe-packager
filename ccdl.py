@@ -589,19 +589,24 @@ def runccdl():
             print('[{}_{}] Downloading {}'.format(s, v, name))
             # dl(os.path.join(product_dir, name), url)
             file_path = os.path.join(product_dir, name)
-            response = session.get(url, stream=True, headers=ADOBE_REQ_HEADERS)
-            total_size_in_bytes = int(
-                response.headers.get('content-length', 0))
-            block_size = 1024  # 1 Kibibyte
-            progress_bar = tqdm(total=total_size_in_bytes,
-                                unit='iB', unit_scale=True)
-            with open(file_path, 'wb') as file:
-                for data in response.iter_content(block_size):
-                    progress_bar.update(len(data))
-                    file.write(data)
-            progress_bar.close()
-            if total_size_in_bytes != 0 and progress_bar.n != total_size_in_bytes:
-                print("ERROR, something went wrong")
+            response = session.head(url, stream=True, headers=ADOBE_REQ_HEADERS)
+            total_size_in_bytes = int(response.headers.get('content-length', 0))
+            if (args.skipExisting and os.path.isfile(file_path) and os.path.getsize(file_path) == total_size_in_bytes):
+                print('[{}_{}] {} already exists, skipping'.format(s, v, name))
+            else:
+                response = session.get(url, stream=True, headers=ADOBE_REQ_HEADERS)
+                total_size_in_bytes = int(
+                    response.headers.get('content-length', 0))
+                block_size = 1024  # 1 Kibibyte
+                progress_bar = tqdm(total=total_size_in_bytes,
+                                    unit='iB', unit_scale=True)
+                with open(file_path, 'wb') as file:
+                    for data in response.iter_content(block_size):
+                        progress_bar.update(len(data))
+                        file.write(data)
+                progress_bar.close()
+                if total_size_in_bytes != 0 and progress_bar.n != total_size_in_bytes:
+                    print("ERROR, something went wrong")
 
     print('\nGenerating driver.xml')
 
@@ -642,6 +647,7 @@ if __name__ == '__main__':
     parser.add_argument('--ignoreNoCreativeCloud',
                         help='Ignore no creative cloud and just fallback to generic icon', action='store_true')
     parser.add_argument('--noRepeatPrompt', help="Don't prompt for additional downloads", action='store_true'),
+    parser.add_argument('--skipExisting', help="Skip existing files, e.g. resuming failed downloads", action='store_true'),
     args = parser.parse_args()
 
     runcc = True
