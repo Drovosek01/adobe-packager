@@ -27,6 +27,7 @@ import os
 import platform
 import shutil
 import sys
+import pathlib
 from collections import OrderedDict
 from subprocess import PIPE, Popen
 from xml.etree import ElementTree as ET
@@ -329,7 +330,9 @@ def runccdl():
     print('{} {} {}\n'.format('=' * ye, VERSION_STR,
           '=' * (31 - len(VERSION_STR) - ye)))
 
-    if (not os.path.isfile('/Library/Application Support/Adobe/Adobe Desktop Common/HDBox/Setup')):
+    if (args.ignoreNoCreativeCloud):
+        print('Not checking Creative Cloud installation, created installer may use a fallback icon if CC is not installed.')
+    elif (not os.path.isfile('/Library/Application Support/Adobe/Adobe Desktop Common/HDBox/Setup')):
         print('Adobe HyperDrive installer not found.\nPlease make sure the Creative Cloud app is installed.')
         exit(1)
 
@@ -440,12 +443,17 @@ def runccdl():
     deflocal = locale.getdefaultlocale()
     deflocal = deflocal[0]
     oslang = None
-    if deflocal:
+
+    if (args.osLanguage):
+        oslang = args.osLanguage
+    elif deflocal:
         oslang = deflocal
+
     if oslang in langs:
         deflang = oslang
     else:
         deflang = 'en_US'
+
     installLanguage = None
     if (args.installLanguage):
         if (args.installLanguage in langs):
@@ -518,7 +526,10 @@ def runccdl():
     with Popen(['/usr/bin/osacompile', '-l', 'JavaScript', '-o', os.path.join(dest, install_app_path)], stdin=PIPE) as p:
         p.communicate(INSTALL_APP_APPLE_SCRIPT.encode('utf-8'))
 
-    icon_path = '/Library/Application Support/Adobe/Adobe Desktop Common/HDBox/Install.app/Contents/Resources/CreativeCloudInstaller.icns'
+    if (os.path.isfile('/Library/Application Support/Adobe/Adobe Desktop Common/HDBox/Install.app/Contents/Resources/CreativeCloudInstaller.icns')):
+        icon_path = '/Library/Application Support/Adobe/Adobe Desktop Common/HDBox/Install.app/Contents/Resources/CreativeCloudInstaller.icns'
+    else:
+        icon_path = '/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/CDAudioVolumeIcon.icns'
     shutil.copyfile(icon_path, os.path.join(install_app_path,
                     'Contents', 'Resources', 'applet.icns'))
 
@@ -619,14 +630,18 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-l', '--installLanguage',
                         help='Language code (eg. en_US)', action='store')
+    parser.add_argument('-o', '--osLanguage',
+                        help='OS Language code (eg. en_US)', action='store')
     parser.add_argument(
         '-s', '--sapCode', help='SAP code for desired product (eg. PHSP)', action='store')
     parser.add_argument(
         '-v', '--version', help='Version of desired product (eg. 21.0.3)', action='store')
     parser.add_argument('-d', '--destination',
-                        help='Directory to download installation files to', action='store')
+                        help='Directory to download installation files to', action='store', type=pathlib.Path)
     parser.add_argument('-a', '--arch',
                         help='Set the architecture to download', action='store')
+    parser.add_argument('--ignoreNoCreativeCloud',
+                        help='Ignore no creative cloud and just fallback to generic icon', action='store_true')
     args = parser.parse_args()
 
     runcc = True
