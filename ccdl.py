@@ -642,9 +642,13 @@ if __name__ == '__main__':
                         help='Set the architecture to download', action='store')
     parser.add_argument('--ignoreNoCreativeCloud',
                         help='Ignore no creative cloud and just fallback to generic icon', action='store_true')
+    parser.add_argument('--noRepeatPrompt', help="Don't prompt for additional downloads", action='store_true'),
     args = parser.parse_args()
 
     runcc = True
     while runcc:
         runccdl()
-        runcc = questiony('\n\nDo you want to create another package')
+        if args.noRepeatPrompt:
+            runcc = False
+        else:
+            runcc = questiony('\n\nDo you want to create another package')
