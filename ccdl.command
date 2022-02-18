@@ -39,4 +39,4 @@ python3 -c "import tqdm" || pip3 install --user tqdm
 
 echo "${CYAN}starting ccdl${RESET}"
 cd "$(dirname "$0")"
-python3 "./ccdl.py $@"
+python3 "./ccdl.py"
