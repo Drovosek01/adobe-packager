@@ -329,7 +329,9 @@ def runccdl():
     print('{} {} {}\n'.format('=' * ye, VERSION_STR,
           '=' * (31 - len(VERSION_STR) - ye)))
 
-    if (not os.path.isfile('/Library/Application Support/Adobe/Adobe Desktop Common/HDBox/Setup')):
+    if (args.ignoreNoCreativeCloud):
+        print('Not checking Creative Cloud installation, created installer may use a fallback icon if CC is not installed.')
+    elif (not os.path.isfile('/Library/Application Support/Adobe/Adobe Desktop Common/HDBox/Setup')):
         print('Adobe HyperDrive installer not found.\nPlease make sure the Creative Cloud app is installed.')
         exit(1)
 
@@ -440,12 +442,17 @@ def runccdl():
     deflocal = locale.getdefaultlocale()
     deflocal = deflocal[0]
     oslang = None
-    if deflocal:
+
+    if (args.osLanguage):
+        oslang = args.osLanguage
+    elif deflocal:
         oslang = deflocal
+
     if oslang in langs:
         deflang = oslang
     else:
         deflang = 'en_US'
+
     installLanguage = None
     if (args.installLanguage):
         if (args.installLanguage in langs):
@@ -518,7 +525,10 @@ def runccdl():
     with Popen(['/usr/bin/osacompile', '-l', 'JavaScript', '-o', os.path.join(dest, install_app_path)], stdin=PIPE) as p:
         p.communicate(INSTALL_APP_APPLE_SCRIPT.encode('utf-8'))
 
-    icon_path = '/Library/Application Support/Adobe/Adobe Desktop Common/HDBox/Install.app/Contents/Resources/CreativeCloudInstaller.icns'
+    if (os.path.isfile('/Library/Application Support/Adobe/Adobe Desktop Common/HDBox/Install.app/Contents/Resources/CreativeCloudInstaller.icns')):
+        icon_path = '/Library/Application Support/Adobe/Adobe Desktop Common/HDBox/Install.app/Contents/Resources/CreativeCloudInstaller.icns'
+    else:
+        icon_path = '/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/CDAudioVolumeIcon.icns'
     shutil.copyfile(icon_path, os.path.join(install_app_path,
                     'Contents', 'Resources', 'applet.icns'))
 
@@ -579,19 +589,24 @@ def runccdl():
             print('[{}_{}] Downloading {}'.format(s, v, name))
             # dl(os.path.join(product_dir, name), url)
             file_path = os.path.join(product_dir, name)
-            response = session.get(url, stream=True, headers=ADOBE_REQ_HEADERS)
-            total_size_in_bytes = int(
-                response.headers.get('content-length', 0))
-            block_size = 1024  # 1 Kibibyte
-            progress_bar = tqdm(total=total_size_in_bytes,
-                                unit='iB', unit_scale=True)
-            with open(file_path, 'wb') as file:
-                for data in response.iter_content(block_size):
-                    progress_bar.update(len(data))
-                    file.write(data)
-            progress_bar.close()
-            if total_size_in_bytes != 0 and progress_bar.n != total_size_in_bytes:
-                print("ERROR, something went wrong")
+            response = session.head(url, stream=True, headers=ADOBE_REQ_HEADERS)
+            total_size_in_bytes = int(response.headers.get('content-length', 0))
+            if (args.skipExisting and os.path.isfile(file_path) and os.path.getsize(file_path) == total_size_in_bytes):
+                print('[{}_{}] {} already exists, skipping'.format(s, v, name))
+            else:
+                response = session.get(url, stream=True, headers=ADOBE_REQ_HEADERS)
+                total_size_in_bytes = int(
+                    response.headers.get('content-length', 0))
+                block_size = 1024  # 1 Kibibyte
+                progress_bar = tqdm(total=total_size_in_bytes,
+                                    unit='iB', unit_scale=True)
+                with open(file_path, 'wb') as file:
+                    for data in response.iter_content(block_size):
+                        progress_bar.update(len(data))
+                        file.write(data)
+                progress_bar.close()
+                if total_size_in_bytes != 0 and progress_bar.n != total_size_in_bytes:
+                    print("ERROR, something went wrong")
 
     print('\nGenerating driver.xml')
 
@@ -619,6 +634,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-l', '--installLanguage',
                         help='Language code (eg. en_US)', action='store')
+    parser.add_argument('-o', '--osLanguage',
+                        help='OS Language code (eg. en_US)', action='store')
     parser.add_argument(
         '-s', '--sapCode', help='SAP code for desired product (eg. PHSP)', action='store')
     parser.add_argument(
@@ -627,9 +644,16 @@ if __name__ == '__main__':
                         help='Directory to download installation files to', action='store')
     parser.add_argument('-a', '--arch',
                         help='Set the architecture to download', action='store')
+    parser.add_argument('--ignoreNoCreativeCloud',
+                        help='Ignore no creative cloud and just fallback to generic icon', action='store_true')
+    parser.add_argument('--noRepeatPrompt', help="Don't prompt for additional downloads", action='store_true'),
+    parser.add_argument('--skipExisting', help="Skip existing files, e.g. resuming failed downloads", action='store_true'),
     args = parser.parse_args()
 
     runcc = True
     while runcc:
         runccdl()
-        runcc = questiony('\n\nDo you want to create another package')
+        if args.noRepeatPrompt:
+            runcc = False
+        else:
+            runcc = questiony('\n\nDo you want to create another package')
