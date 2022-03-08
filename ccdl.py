@@ -398,8 +398,8 @@ def runccdl():
             print('[{}] {}'.format(s, d))
 
         while sapCode is None:
-            val = input(
-                '\nPlease enter the SAP Code of the desired product (eg. PHSP for Photoshop): ') or 'PHSP'
+            val = upper(input(
+                '\nPlease enter the SAP Code of the desired product (eg. PHSP for Photoshop): ')) or 'PHSP'
             if products.get(val):
                 sapCode = val
             else:
