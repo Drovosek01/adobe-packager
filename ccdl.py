@@ -3,6 +3,9 @@
 This is the Adobe Offline Package downloader.
 
 CHANGELOG
+(0.1.4-hotfix1)
++ Updated URL (newer downloads work now)
+
 (0.1.4)
 + Added M1 support. Defaults to yes when running on an M1 processor.
 + Added option to make another package after end.
@@ -25,7 +28,9 @@ import json
 import locale
 import os
 import platform
+import random
 import shutil
+import string
 import sys
 from collections import OrderedDict
 from subprocess import PIPE, Popen
@@ -208,7 +213,8 @@ function run() {
 }
 '''
 
-ADOBE_PRODUCTS_XML_URL = 'https://cdn-ffc.oobesaas.adobe.com/core/v4/products/all?_type=xml&channel=ccm,sti&platform={installPlatform}&productType=Desktop'
+#ADOBE_PRODUCTS_XML_URL = 'https://cdn-ffc.oobesaas.adobe.com/core/v4/products/all?_type=xml&channel=ccm,sti&platform={installPlatform}&productType=Desktop'
+ADOBE_PRODUCTS_XML_URL = 'https://prod-rel-ffc-ccm.oobesaas.adobe.com/adobe-ffc-external/core/v4/products/all?_type=xml&channel=ccm,sti&platform={installPlatform}&productType=Desktop'
 ADOBE_APPLICATION_JSON_URL = 'https://cdn-ffc.oobesaas.adobe.com/core/v3/applications'
 
 DRIVER_XML = '''<DriverInfo>
@@ -236,9 +242,10 @@ DRIVER_XML_DEPENDENCY = '''         <Dependency>
             </Dependency>'''
 
 ADOBE_REQ_HEADERS = {
-    'X-Adobe-App-Id': 'accc-hdcore-desktop',
+    'X-Adobe-App-Id': 'accc-apps-panel-desktop',
     'User-Agent': 'Adobe Application Manager 2.0',
-    'X-Api-Key': 'CC_HD_ESD_1_0'
+    'X-Api-Key': 'CC_HD_ESD_1_0',
+    'Cookie': 'fg=' + ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(26)) + '======'
 }
 
 
