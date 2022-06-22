@@ -281,7 +281,7 @@ def parse_products_xml(products_xml):
         pf = p.find('platforms/platform')
         appplatform = pf.get('id')
         dependencies = list(
-            p.find('platforms/platform/languageSet/dependencies'))
+            p.findall('platforms/platform/languageSet/dependencies/dependency'))
 
         if not products.get(sap):
             if p.find('productInfoPage'):
