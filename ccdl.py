@@ -446,10 +446,13 @@ def runccdl():
     langs = ['en_US', 'en_GB', 'en_IL', 'en_AE', 'es_ES', 'es_MX', 'pt_BR', 'fr_FR', 'fr_CA', 'fr_MA', 'it_IT', 'de_DE', 'nl_NL',
              'ru_RU', 'uk_UA', 'zh_TW', 'zh_CN', 'ja_JP', 'ko_KR', 'pl_PL', 'hu_HU', 'cs_CZ', 'tr_TR', 'sv_SE', 'nb_NO', 'fi_FI', 'da_DK', 'ALL']
     # Detecting Current set default Os language. Doesn't seem to always work.
-    deflocal = locale.getdefaultlocale()
-    deflocal = deflocal[0]
-    oslang = None
+    try:
+        deflocal = locale.getdefaultlocale()
+        deflocal = deflocal[0]
+    except ValueError:  # Fixes issue 44 when python can't detect the locale.
+        deflocal = 'en_US'
 
+    oslang = None
     if (args.osLanguage):
         oslang = args.osLanguage
     elif deflocal:
