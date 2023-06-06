@@ -214,7 +214,7 @@ function run() {
 '''
 
 #ADOBE_PRODUCTS_XML_URL = 'https://cdn-ffc.oobesaas.adobe.com/core/v4/products/all?_type=xml&channel=ccm,sti&platform={installPlatform}&productType=Desktop'
-ADOBE_PRODUCTS_XML_URL = 'https://prod-rel-ffc-ccm.oobesaas.adobe.com/adobe-ffc-external/core/v5/products/all?_type=xml&channel=ccm,sti&platform={installPlatform}&productType=Desktop'
+ADOBE_PRODUCTS_XML_URL = 'https://prod-rel-ffc-ccm.oobesaas.adobe.com/adobe-ffc-external/core/v4/products/all?_type=xml&channel=ccm,sti&platform={installPlatform}&productType=Desktop'
 ADOBE_APPLICATION_JSON_URL = 'https://cdn-ffc.oobesaas.adobe.com/core/v3/applications'
 
 DRIVER_XML = '''<DriverInfo>
@@ -509,21 +509,12 @@ def runccdl():
     prods_to_download = []
     dependencies = prodInfo['dependencies']
     for d in dependencies:
-     try:
-         prods_to_download.append({
-             'sapCode': d['sapCode'],
-             'version': d['version'],
-             'buildGuid': products[d['sapCode']]['versions'][d['version']]['buildGuid']
-         })
-     except KeyError:
-         try:
-             prods_to_download.append({
-                 'sapCode': d['sapCode'],
-                 'version': d['version'],
-                 'buildGuid': productsintel[d['sapCode']]['versions'][d['version']]['buildGuid']
-             })
-         except KeyError:
-             print(f"Error: buildGuid not found for sapCode: {d['sapCode']}, version: {d['version']}")
+        try:
+            prods_to_download.append({'sapCode': d['sapCode'], 'version': d['version'],
+                                      'buildGuid': products[d['sapCode']]['versions'][d['version']]['buildGuid']})
+        except KeyError:
+            prods_to_download.append({'sapCode': d['sapCode'], 'version': d['version'],
+                                     'buildGuid': productsintel[d['sapCode']]['versions'][d['version']]['buildGuid']})
 
     prods_to_download.insert(
         0, {'sapCode': prodInfo['sapCode'], 'version': prodInfo['version'], 'buildGuid': prodInfo['buildGuid']})
