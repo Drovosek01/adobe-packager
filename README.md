@@ -32,8 +32,6 @@ Yes, I am not the original creator of this script and so far I have only formatt
 
 ## Known issues
 
-- Unable to download the Adobe Acrobat installer
-- When using a link to download a v5 xml file the script crashes
 - Postfix `macarm64` can mean `macuniversal` architecture
 
 ## Resolved issues
@@ -42,9 +40,9 @@ Yes, I am not the original creator of this script and so far I have only formatt
 
 ## To Do
 
-- [ ] Find a way to download Adobe Acrobat
-- [ ] Fix the script for downloading applications via xml v5
-- [ ] Find the difference between xml v5 and v4
+- [x] Find a way to download Adobe Acrobat
+- [x] Fix the script for downloading applications via xml v5
+- [x] Find the difference between xml v5 and v4
 - [ ] Refactoring the script - split it into different files
 - [ ] Make the script fully or partially cross-platform
 - [ ] Make interactive examples of requests for downloading an xml file in the browser

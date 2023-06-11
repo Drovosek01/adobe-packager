@@ -441,17 +441,16 @@ def runccdl():
             selectedVersion = 6
         else:
             print('Invalid argument "{}" for {}'.format(args.urlVersion, 'URL version'))
-    else:
-        while not selectedVersion:
-            val = input('\nPlease enter the URL version(v4/v5/v6) for downloading products.xml, or nothing for v6: ') or 'v6'
-            if val == 'v4' or val == '4':
-                selectedVersion = 4
-            elif val == 'v5' or val == '5':
-                selectedVersion = 5
-            elif val == 'v6' or val == '6':
-                selectedVersion = 6
-            else:
-                print('Invalid URL version {}, please input again'.format(val))
+    while not selectedVersion:
+        val = input('\nPlease enter the URL version(v4/v5/v6) for downloading products.xml, or nothing for v6: ') or 'v6'
+        if val == 'v4' or val == '4':
+            selectedVersion = 4
+        elif val == 'v5' or val == '5':
+            selectedVersion = 5
+        elif val == 'v6' or val == '6':
+            selectedVersion = 6
+        else:
+            print('Invalid URL version: {}'.format(val))
     print('')
 
     ism1 = -1
