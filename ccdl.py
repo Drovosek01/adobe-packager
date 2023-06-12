@@ -7,7 +7,7 @@ CHANGELOG
 + Added v5 & v6 URL (Support Photoshop BETA)
 + Added full support for Adobe Acrobat and partial support for XD (Need bearer_token)
 + Rewrote the code for parsing and downloading dependencies
-+ Automatically uppercase SAP code
++ Automatically uppercase SAP code and format language code
 
 (0.1.4-hotfix1)
 + Updated URL (newer downloads work now)
@@ -592,6 +592,10 @@ def runccdl():
         while installLanguage is None:
             val = input(
                 f'\nPlease enter the desired install language, or nothing for [{deflang}]: ') or deflang
+            if (len(val) == 5):
+                val = val[0:2].lower() + val[2] + val[3:5].upper()
+            elif (len(val) == 3):
+                val = val.upper()
             if (val in langs):
                 installLanguage = val
             else:
