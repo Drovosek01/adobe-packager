@@ -453,6 +453,9 @@ def runccdl():
             print('Invalid URL version: {}'.format(val))
     print('')
 
+    if args.Auth:
+        ADOBE_REQ_HEADERS['Authorization'] = args.Auth
+
     ism1 = -1
     if args.arch:
         if args.arch.lower() == 'x86_64' or args.arch.lower() == 'x64' or args.arch.lower() == 'intel':
@@ -736,22 +739,24 @@ if __name__ == '__main__':
                         help='Language code (eg. en_US)', action='store')
     parser.add_argument('-o', '--osLanguage',
                         help='OS Language code (eg. en_US)', action='store')
-    parser.add_argument(
-        '-s', '--sapCode', help='SAP code for desired product (eg. PHSP)', action='store')
-    parser.add_argument(
-        '-v', '--version', help='Version of desired product (eg. 21.0.3)', action='store')
+    parser.add_argument('-s', '--sapCode', 
+                        help='SAP code for desired product (eg. PHSP)', action='store')
+    parser.add_argument('-v', '--version', 
+                        help='Version of desired product (eg. 21.0.3)', action='store')
     parser.add_argument('-d', '--destination',
                         help='Directory to download installation files to', action='store')
     parser.add_argument('-a', '--arch',
                         help='Set the architecture to download', action='store')
     parser.add_argument('-u', '--urlVersion',
                         help="Get app info from v4/v5/v6 url (eg. v6)", action='store')
+    parser.add_argument('-A', '--Auth',
+                        help='Add a bearer_token to to authenticate your account, e.g. downloading Xd', action='store')
     parser.add_argument('--ignoreNoCreativeCloud',
                         help='Ignore no creative cloud and just fallback to generic icon', action='store_true')
-    parser.add_argument(
-        '--noRepeatPrompt', help="Don't prompt for additional downloads", action='store_true')
-    parser.add_argument(
-        '--skipExisting', help="Skip existing files, e.g. resuming failed downloads", action='store_true')
+    parser.add_argument('--noRepeatPrompt', 
+                        help="Don't prompt for additional downloads", action='store_true')
+    parser.add_argument('--skipExisting', 
+                        help="Skip existing files, e.g. resuming failed downloads", action='store_true')
     args = parser.parse_args()
 
     runcc = True
