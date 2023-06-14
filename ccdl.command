@@ -6,7 +6,7 @@ RESET="$(tput sgr0)"
 # clear
 
 if command -v python3 > /dev/null 2>&1; then
-	if [ $(python3 -c "print('ye')") = "ye" ]; then
+	if [ $(python3 -c "print('ye')") == "ye" ]; then
 		# clear
 		echo "${CYAN}python3 found!${RESET}"
 	else
@@ -28,11 +28,11 @@ else
 fi
 
 python3 -c 'import requests' > /dev/null 2>&1
-if [ $? == 0 ]; then
-	echo "${CYAN}requests found!${RESET}"
+if [[ $? == 0 && $(python3 -c 'import requests;print(requests.__version__)') == "2.28.2" ]]; then
+	echo "${CYAN}requests 2.28.2 found!${RESET}"
 else
-	echo "${CYAN}installing requests...${RESET}"
-	python3 -m pip install requests --user
+	echo "${CYAN}installing requests 2.28.2...${RESET}"
+	python3 -m pip install requests==2.28.2 --user
 fi
 python3 -c "import tqdm" || pip3 install --user tqdm 
 # clear
