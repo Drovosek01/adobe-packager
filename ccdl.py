@@ -257,6 +257,9 @@ ADOBE_DL_HEADERS = {
     'User-Agent': 'Creative Cloud'
 }
 
+ADOBE_CC_MAC_ICON_PATH = '/Library/Application Support/Adobe/Adobe Desktop Common/HDBox/Install.app/Contents/Resources/CreativeCloudInstaller.icns'
+MAC_VOLUME_ICON_PATH = '/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/CDAudioVolumeIcon.icns'
+
 
 def r(url, headers=ADOBE_REQ_HEADERS):
     """Retrieve a from a url as a string."""
@@ -407,7 +410,7 @@ def download_APRO(appInfo, cdn):
     print('version: ' + version)
     print('installLanguage: ' + 'ALL')
     print('dest: ' + os.path.join(dest, name))
-    
+
     print('\nDownloading...\n')
 
     print('[{}_{}] Selected 1 package'.format(sapCode, version))
@@ -417,14 +420,15 @@ def download_APRO(appInfo, cdn):
     return
 
 
-def runccdl():
-    """Run Main exicution."""
+def show_version():
     ye = int((32 - len(VERSION_STR)) / 2)
     print('=================================')
     print('= Adobe macOS Package Generator =')
     print('{} {} {}\n'.format('=' * ye, VERSION_STR,
           '=' * (31 - len(VERSION_STR) - ye)))
 
+
+def get_products():
     if (args.ignoreNoCreativeCloud):
         print('Not checking Creative Cloud installation, created installer may use a fallback icon if CC is not installed.')
     elif (not os.path.isfile('/Library/Application Support/Adobe/Adobe Desktop Common/HDBox/Setup')):
@@ -441,6 +445,8 @@ def runccdl():
             selectedVersion = 6
         else:
             print('Invalid argument "{}" for {}'.format(args.urlVersion, 'URL version'))
+            exit(1)
+
     while not selectedVersion:
         val = input('\nPlease enter the URL version(v4/v5/v6) for downloading products.xml, or nothing for v6: ') or 'v6'
         if val == 'v4' or val == '4':
@@ -468,14 +474,16 @@ def runccdl():
         if platform.machine() == 'arm64':
             ism1 = questiony('Do you want to make M1 native packages')
         else:
-            ism1 = questionn('Do you want to make M1 native packages')
+            ism1 = False
     allowedPlatforms = ['macuniversal']
     if ism1:
         allowedPlatforms.append('macarm64')
+        print('Note: If the Adobe program is NOT listed here, there is no native M1 version.')
+        print('      Use the non native version with Rosetta 2 until an M1 version is available.')
     else:
         allowedPlatforms.append('osx10-64')
         allowedPlatforms.append('osx10')
-    
+
     productsPlatform = 'osx10-64,osx10,macarm64,macuniversal'
     adobeurl = ADOBE_PRODUCTS_XML_URL.format(urlVersion=selectedVersion, installPlatform=productsPlatform)
 
@@ -497,26 +505,21 @@ def runccdl():
                     lastv = v['productVersion']
             if lastv:
                 sapCodes[p['sapCode']] = p['displayName']
-    if ism1:
-        print(
-            'Note: If the Adobe program is NOT listed here, there is no native M1 version.')
-        print('      Use the non native version with Rosetta 2 until an M1 version is available.')
-    print(
-        str(len(sapCodes)) + ' products found:')
+    print(str(len(sapCodes)) + ' products found:')
 
-    sapCode = None
-    if (args.sapCode):
-        if products.get(args.sapCode.upper()):
-            print('\nUsing provided SAP Code: ' + args.sapCode)
-            sapCode = args.sapCode
-        else:
-            print('\nProvided SAP Code not found in products: ' + args.sapCode)
+    if args.sapCode and products.get(args.sapCode.upper()) is None:
+        print('\nProvided SAP Code not found in products: ' + args.sapCode)
+        exit(1)
 
-    print('')
+    return products, cdn, sapCodes, allowedPlatforms
 
+
+def run_ccdl(products, cdn, sapCodes, allowedPlatforms):
+    """Run Main exicution."""
+    sapCode = args.sapCode
     if not sapCode:
         for s, d in sapCodes.items():
-            print('[{}]{}{}'.format(s, (10 - len(s))*' ',  d))
+            print('[{}]{}{}'.format(s, (10 - len(s)) * ' ', d))
 
         while sapCode is None:
             val = input(
@@ -558,16 +561,15 @@ def runccdl():
     if sapCode == 'APRO':
         download_APRO(versions[version], cdn)
         return
-    
+
     # TODO: Parase languages in the xml
     langs = ['en_US', 'en_GB', 'en_IL', 'en_AE', 'es_ES', 'es_MX', 'pt_BR', 'fr_FR', 'fr_CA', 'fr_MA', 'it_IT', 'de_DE', 'nl_NL',
              'ru_RU', 'uk_UA', 'zh_TW', 'zh_CN', 'ja_JP', 'ko_KR', 'pl_PL', 'hu_HU', 'cs_CZ', 'tr_TR', 'sv_SE', 'nb_NO', 'fi_FI', 'da_DK', 'ALL']
     # Detecting Current set default Os language. Fixed.
-    deflocal = locale.getlocale()
-    deflocal = deflocal[0]
+    deflocal = locale.getlocale()[0]
     if not deflocal:
         deflocal = 'en_US'
-    
+
     oslang = None
     if args.osLanguage:
         oslang = args.osLanguage
@@ -592,11 +594,11 @@ def runccdl():
         while installLanguage is None:
             val = input(
                 f'\nPlease enter the desired install language, or nothing for [{deflang}]: ') or deflang
-            if (len(val) == 5):
+            if len(val) == 5:
                 val = val[0:2].lower() + val[2] + val[3:5].upper()
-            elif (len(val) == 3):
+            elif len(val) == 3:
                 val = val.upper()
-            if (val in langs):
+            if val in langs:
                 installLanguage = val
             else:
                 print(
@@ -610,7 +612,7 @@ def runccdl():
                 if oslang not in langs:
                     print(
                         '{} is not available. Please use a value from the list above.'.format(oslang))
-    
+
     dest = get_download_path()
 
     print('')
@@ -630,8 +632,6 @@ def runccdl():
                     break
         if not buildGuid:
             buildGuid = firstGuid
-            if (not ism1) and firstArch == 'macarm64':
-                print('\033[31mError!\033[0m')
         prods_to_download.append({'sapCode': d['sapCode'], 'version': d['version'],
                                   'buildGuid': buildGuid})
 
@@ -649,15 +649,13 @@ def runccdl():
 
     print('\nCreating {}'.format(install_app_name))
 
-    install_app_path = os.path.join(
-        dest, install_app_name)
     with Popen(['/usr/bin/osacompile', '-l', 'JavaScript', '-o', os.path.join(dest, install_app_path)], stdin=PIPE) as p:
         p.communicate(INSTALL_APP_APPLE_SCRIPT.encode('utf-8'))
 
-    if (os.path.isfile('/Library/Application Support/Adobe/Adobe Desktop Common/HDBox/Install.app/Contents/Resources/CreativeCloudInstaller.icns')):
-        icon_path = '/Library/Application Support/Adobe/Adobe Desktop Common/HDBox/Install.app/Contents/Resources/CreativeCloudInstaller.icns'
+    if os.path.isfile(ADOBE_CC_MAC_ICON_PATH):
+        icon_path = ADOBE_CC_MAC_ICON_PATH
     else:
-        icon_path = '/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/CDAudioVolumeIcon.icns'
+        icon_path = MAC_VOLUME_ICON_PATH
     shutil.copyfile(icon_path, os.path.join(install_app_path,
                     'Contents', 'Resources', 'applet.icns'))
 
@@ -706,7 +704,7 @@ def runccdl():
                     noncore_pkg_count += 1
                     download_urls.append(cdn + pkg['Path'])
                 else:
-                    if ((not pkg.get('Condition')) or installLanguage in pkg['Condition'] or oslang in pkg['Condition']):
+                    if (not pkg.get('Condition')) or installLanguage in pkg['Condition'] or oslang in pkg['Condition']:
                         noncore_pkg_count += 1
                         download_urls.append(cdn + pkg['Path'])
         print('[{}_{}] Selected {} core packages and {} non-core packages'.format(s,
@@ -738,14 +736,16 @@ def runccdl():
 
 
 if __name__ == '__main__':
+    show_version()
+
     parser = argparse.ArgumentParser()
     parser.add_argument('-l', '--installLanguage',
                         help='Language code (eg. en_US)', action='store')
     parser.add_argument('-o', '--osLanguage',
                         help='OS Language code (eg. en_US)', action='store')
-    parser.add_argument('-s', '--sapCode', 
+    parser.add_argument('-s', '--sapCode',
                         help='SAP code for desired product (eg. PHSP)', action='store')
-    parser.add_argument('-v', '--version', 
+    parser.add_argument('-v', '--version',
                         help='Version of desired product (eg. 21.0.3)', action='store')
     parser.add_argument('-d', '--destination',
                         help='Directory to download installation files to', action='store')
@@ -757,16 +757,15 @@ if __name__ == '__main__':
                         help='Add a bearer_token to to authenticate your account, e.g. downloading Xd', action='store')
     parser.add_argument('--ignoreNoCreativeCloud',
                         help='Ignore no creative cloud and just fallback to generic icon', action='store_true')
-    parser.add_argument('--noRepeatPrompt', 
+    parser.add_argument('--noRepeatPrompt',
                         help="Don't prompt for additional downloads", action='store_true')
-    parser.add_argument('--skipExisting', 
+    parser.add_argument('--skipExisting',
                         help="Skip existing files, e.g. resuming failed downloads", action='store_true')
     args = parser.parse_args()
 
-    runcc = True
-    while runcc:
-        runccdl()
-        if args.noRepeatPrompt:
-            runcc = False
-        else:
-            runcc = questiony('\n\nDo you want to create another package')
+    products, cdn, sapCodes, allowedPlatforms = get_products()
+
+    while True:
+        run_ccdl(products, cdn, sapCodes, allowedPlatforms)
+        if args.noRepeatPrompt or not questiony('\n\nDo you want to create another package'):
+            break
