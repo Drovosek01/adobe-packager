@@ -41,6 +41,7 @@ import sys
 from collections import OrderedDict
 from subprocess import PIPE, Popen
 from xml.etree import ElementTree as ET
+import gzip
 
 import requests
 
@@ -274,6 +275,26 @@ def get_products_xml(adobeurl):
     return ET.fromstring(r(adobeurl))
 
 
+def fetch_and_save_xml(url, save_path=None, gzip_save=False):
+    """Downloads XML and optionally saves it as plain text and gzip."""
+    print(f"Fetching XML: {url}")
+    response = session.get(url, headers=ADOBE_REQ_HEADERS)
+    xml_text = response.text
+
+    if save_path:
+        with open(save_path, "w", encoding="utf-8") as f:
+            f.write(xml_text)
+        print(f"Saved XML to {save_path}")
+
+    if gzip_save and save_path:
+        gz_path = save_path + ".gz"
+        with gzip.open(gz_path, "wt", encoding="utf-8") as gz:
+            gz.write(xml_text)
+        print(f"Saved GZIP XML to {gz_path}")
+
+    return xml_text
+
+
 def parse_products_xml(products_xml, urlVersion, allowedPlatforms):
     """2nd stage of parsing the XML."""
     if urlVersion == 6:
@@ -488,7 +509,16 @@ def get_products():
     adobeurl = ADOBE_PRODUCTS_XML_URL.format(urlVersion=selectedVersion, installPlatform=productsPlatform)
 
     print('\nDownloading products.xml\n')
-    products_xml = get_products_xml(adobeurl)
+    # products_xml = get_products_xml(adobeurl)
+    xml_file = args.save_xml or f"products_v{selectedVersion}.xml"
+
+    xml_str = fetch_and_save_xml(
+        adobeurl,
+        save_path=xml_file,
+        gzip_save=args.xml_gzip
+    )
+
+    products_xml = ET.fromstring(xml_str)
 
     print('\nParsing products.xml\n')
     products, cdn = parse_products_xml(products_xml, selectedVersion, allowedPlatforms)
@@ -766,6 +796,10 @@ if __name__ == '__main__':
                         help="Don't prompt for additional downloads", action='store_true')
     parser.add_argument('--skipExisting',
                         help="Skip existing files, e.g. resuming failed downloads", action='store_true')
+    parser.add_argument("--save_xml",
+                        help="Path to save downloaded products.xml file", action="store")
+    parser.add_argument("--xml_gzip",
+                        help="Also save products.xml in gzip format", action="store_true")
     args = parser.parse_args()
 
     products, cdn, sapCodes, allowedPlatforms = get_products()
