@@ -66,10 +66,10 @@ function shellescape(a) {
   var ret = [];
 
   a.forEach(function(s) {
-    if (/[^A-Za-z0-9_\\/:=-]/.test(s)) {
-      s = "'"+s.replace(/'/g,"'\\\\''")+"'";
+    if (/[^A-Za-z0-9_\/:=-]/.test(s)) {
+      s = "'"+s.replace(/'/g,"'\\''")+"'";
       s = s.replace(/^(?:'')+/g, '') // unduplicate single-quote at the beginning
-        .replace(/\\\\\'''/g, "\\\\'" ); // remove non-escaped single-quote if there are enclosed between 2 escaped
+        .replace(/\\\'''/g, "\\'" ); // remove non-escaped single-quote if there are enclosed between 2 escaped
     }
     ret.push(s);
   });
@@ -87,13 +87,13 @@ function run() {
   // The JXA Objective-C bridge is completely broken in Big Sur
   if (!$.NSProcessInfo && parseFloat(app.doShellScript('sw_vers -productVersion')) >= 11.0) {
       app.displayAlert('GUI unavailable in Big Sur', {
-          message: 'JXA is currently broken in Big Sur.\\nInstall in Terminal instead?',
+          message: 'JXA is currently broken in Big Sur.\nInstall in Terminal instead?',
           buttons: ['Cancel', 'Install in Terminal'],
           defaultButton: 'Install in Terminal',
           cancelButton: 'Cancel'
       })
       const cmd = shellescape([ 'sudo', hyperDrivePath, '--install=1', '--driverXML=' + driverPath ])
-      app.displayDialog('Run this command in Terminal to install (press \\'OK\\' to copy to clipboard)', { defaultAnswer: cmd })
+      app.displayDialog('Run this command in Terminal to install (press \'OK\' to copy to clipboard)', { defaultAnswer: cmd })
       app.setTheClipboardTo(cmd)
       return
   }
