@@ -20,11 +20,14 @@ if command -v python3 > /dev/null 2>&1; then
 		fi
 	fi
 else
-	echo "${CYAN}installing python3...${RESET}"
-	if ! command -v brew > /dev/null 2>&1; then
-		echo | /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
-	fi
-	brew install python
+	echo "You need download and install Python 3"
+	open "https://www.python.org/downloads/"
+	exit 0
+	# echo "${CYAN}installing python3...${RESET}"
+	# if ! command -v brew > /dev/null 2>&1; then
+	# 	echo | /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
+	# fi
+	# brew install python
 fi
 
 python3 -c 'import requests' > /dev/null 2>&1
