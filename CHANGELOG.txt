@@ -1,0 +1,29 @@
+This is the Adobe Offline Package downloader.
+
+CHANGELOG
+
+(0.2.0)
++ Added v5 & v6 URL (Support Photoshop BETA)
++ Added full support for Adobe Acrobat and partial support for XD (Need bearer_token)
++ Rewrote the code for parsing and downloading dependencies
++ Automatically uppercase SAP code and format language code
+
+(0.1.4-hotfix1)
++ Updated URL (newer downloads work now)
+
+(0.1.4)
++ Added M1 support. Defaults to yes when running on an M1 processor.
++ Added option to make another package after end.
++ Default picks picks newest version if one isn't specified
++ Default picks PhotoShop if nothing is entered, since it was used as the example.
++ Added Platform to version listing.
+
+(0.1.3)
++ Went back to getting old URL.
++ Only show Versions actually Downloadable
++ Shows all Versions available
+
+(0.1.2-hotfix1)
++ updated script to work with new api (newer downloads work now)
++ added workaround for broken installer on big sur
++ made everything even more messy and disgusting
