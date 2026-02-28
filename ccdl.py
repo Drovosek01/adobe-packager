@@ -102,13 +102,13 @@ def get_products_xml(adobeurl):
     return ET.fromstring(r(adobeurl))
 
 
-def fetch_and_save_xml(url, save_path=None):
+def fetch_and_save_xml(url, needSave=True, save_path=None):
     """Downloads XML and optionally saves it as plain text"""
     print(f"Fetching XML: {url}")
     response = session.get(url, headers=ADOBE_REQ_HEADERS, stream=True)
     xml_text = response.text
 
-    if save_path:
+    if needSave and save_path:
         with open(save_path, "w", encoding="utf-8") as f:
             f.write(xml_text)
         print(f"Saved source XML to {save_path}")
@@ -217,18 +217,18 @@ def get_download_path():
             exit()
     return dest
 
-def download_file(url, product_dir, s, v, name=None):
+def download_file(url, product_dir, sapCode, version, name=None):
     """Download a file"""
     if not name:
         name = url.split('/')[-1].split('?')[0]
     print('Url is: ' + url)
-    print('[{}_{}] Downloading {}'.format(s, v, name))
+    print('[{}_{}] Downloading {}'.format(sapCode, version, name))
     file_path = os.path.join(product_dir, name)
     response = session.head(url, stream=True, headers=ADOBE_DL_HEADERS)
     total_size_in_bytes = int(
         response.headers.get('content-length', 0))
     if (args.skipExisting and os.path.isfile(file_path) and os.path.getsize(file_path) == total_size_in_bytes):
-        print('[{}_{}] {} already exists, skipping'.format(s, v, name))
+        print('[{}_{}] {} already exists, skipping'.format(sapCode, version, name))
     else:
         response = session.get(
             url, stream=True, headers=ADOBE_REQ_HEADERS)
@@ -311,24 +311,24 @@ def get_products():
     if args.Auth:
         ADOBE_REQ_HEADERS['Authorization'] = args.Auth
 
-    ism1 = -1
+    isAppleSilicon = -1
     if args.arch:
         if args.arch.lower() == 'x86_64' or args.arch.lower() == 'x64' or args.arch.lower() == 'intel':
-            ism1 = False
+            isAppleSilicon = False
         elif args.arch.lower() == 'arm64' or args.arch.lower() == 'arm' or args.arch.lower() == 'm1':
-            ism1 = True
+            isAppleSilicon = True
         else:
             print('Invalid argument "{}" for {}'.format(args.arch, 'architecture'))
-    if ism1 == -1:
+    if isAppleSilicon == -1:
         if platform.machine() == 'arm64':
-            ism1 = questiony('Do you want to make M1 native packages')
+            isAppleSilicon = questiony('Do you want to make Apple Silicon native packages')
         else:
-            ism1 = False
+            isAppleSilicon = False
     allowedPlatforms = ['macuniversal']
-    if ism1:
+    if isAppleSilicon:
         allowedPlatforms.append('macarm64')
-        print('Note: If the Adobe program is NOT listed here, there is no native M1 version.')
-        print('      Use the non native version with Rosetta 2 until an M1 version is available.')
+        print('Note: If the Adobe program is NOT listed here, there is no native Apple Silicon version.')
+        print('      Use the non native version with Rosetta 2 until an Apple Silicon version is available.')
     else:
         allowedPlatforms.append('osx10-64')
         allowedPlatforms.append('osx10')
@@ -338,12 +338,20 @@ def get_products():
 
     print('\nDownloading products.xml\n')
     # products_xml = get_products_xml(adobeurl)
-    xml_file = args.save_xml or f"products_v{selectedVersion}.xml"
-
-    xml_str = fetch_and_save_xml(
-        adobeurl,
-        save_path=xml_file
-    )
+    print(args.save_xml)
+    if args.save_xml:
+        xml_str = fetch_and_save_xml(
+            adobeurl,
+            True,
+            args.save_xml,
+        )
+    else:
+        needSaveXML = questionn('Do you want save products.xml file')
+        xml_str = fetch_and_save_xml(
+            adobeurl,
+            needSaveXML,
+            f"products_v{selectedVersion}.xml",
+        )
 
     products_xml = ET.fromstring(xml_str)
 
