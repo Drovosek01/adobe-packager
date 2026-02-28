@@ -407,6 +407,39 @@ def remove_dependency_app_json(data: dict, sap_code: str) -> bool:
     return isACRRemoved
 
 
+def remove_non_core_packages(data: dict) -> bool:
+    """
+    Deletes all packages with Type == 'non-core' from application.json.
+    Returns True if the 1 or more 'non-core' package was found and deleted.
+    """
+
+    packages_container = data.get("Packages")
+    if not packages_container:
+        return False
+    
+    packages = packages_container.get("Package")
+    if not packages:
+        return False
+
+    isNonCoresRemoved = False
+
+    # If the list of packages is
+    if isinstance(packages, list):
+        original_len = len(packages)
+        packages_container["Package"] = [
+            p for p in packages if p.get("Type") != "non-core"
+        ]
+        isNonCoresRemoved = len(packages_container["Package"]) != original_len
+
+    # If there is only one package (dict instead of list)
+    elif isinstance(packages, dict):
+        if packages.get("Type") == "non-core":
+            packages_container["Package"] = []
+            isNonCoresRemoved = True
+
+    return isNonCoresRemoved
+
+
 def run_ccdl(products, cdn, sapCodes, allowedPlatforms):
     """Run Main exicution."""
     sapCode = args.sapCode
@@ -599,6 +632,17 @@ def run_ccdl(products, cdn, sapCodes, allowedPlatforms):
                         json.dump(data, f, indent=4, ensure_ascii=False)
                         print('[{}_{}] ACR dependency removed'.format(s, v))
 
+        if args.skipNonCorePackages:
+            with open(app_json_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                if remove_non_core_packages(data):
+                    if not os.path.exists(backup_path):
+                        shutil.copy2(app_json_path, backup_path)
+
+                    with open(app_json_path, "w", encoding="utf-8") as f:
+                        json.dump(data, f, indent=4, ensure_ascii=False)
+                        print('[{}_{}] Non-Core packages removed'.format(s, v))
+
         print('')
 
     print('Downloading...\n')
@@ -608,7 +652,7 @@ def run_ccdl(products, cdn, sapCodes, allowedPlatforms):
         app_json = p['application_json']
         product_dir = os.path.join(products_dir, s)
 
-        print('[{}_{}] Parsing available packages'.format(s, v))
+        print('\n[{}_{}] Parsing available packages'.format(s, v))
         core_pkg_count = 0
         noncore_pkg_count = 0
         packages = app_json['Packages']['Package']
@@ -618,6 +662,8 @@ def run_ccdl(products, cdn, sapCodes, allowedPlatforms):
                 core_pkg_count += 1
                 download_urls.append(cdn + pkg['Path'])
             else:
+                if args.skipNonCorePackages:
+                    continue
                 # TODO: actually parse `Condition` and check it properly (and maybe look for & add support for conditions other than installLanguage)
                 language_is_suitable = (
                         installLanguage == "ALL"
@@ -627,12 +673,14 @@ def run_ccdl(products, cdn, sapCodes, allowedPlatforms):
                         or '[installLanguage]==' + oslang in pkg['Condition']
                 )
 
+                noncore_pkg_count += 1
                 if language_is_suitable:
-                    noncore_pkg_count += 1
                     download_urls.append(cdn + pkg['Path'])
 
-        print('[{}_{}] Selected {} core packages and {} non-core packages'.format(s,
-              v, core_pkg_count, noncore_pkg_count))
+        if args.skipNonCorePackages:
+            print('[{}_{}] Selected {} core packages'.format(s, v, core_pkg_count))
+        else:
+            print('[{}_{}] Selected {} core packages and {} non-core packages'.format(s, v, core_pkg_count, noncore_pkg_count))
 
         for url in download_urls:
             download_file(url, product_dir, s, v)
@@ -708,6 +756,8 @@ if __name__ == '__main__':
                         nargs='?', const=True,)
     parser.add_argument('--skipDependencyACR',
                         help="Skip downloading CameraRaw for package", action='store_true')
+    parser.add_argument('--skipNonCorePackages',
+                        help="Skip downloading packages whose type is specified as non-core in application.json files.", action='store_true')
     args = parser.parse_args()
 
     products, cdn, sapCodes, allowedPlatforms = get_products()
