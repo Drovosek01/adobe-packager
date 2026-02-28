@@ -377,6 +377,8 @@ def get_products():
 def run_ccdl(products, cdn, sapCodes, allowedPlatforms):
     """Run Main exicution."""
     sapCode = args.sapCode
+    isContainACR = False
+    
     if not sapCode:
         for s, d in sapCodes.items():
             print('[{}]{}{}'.format(s, (10 - len(s)) * ' ', d))
@@ -480,8 +482,21 @@ def run_ccdl(products, cdn, sapCodes, allowedPlatforms):
     prodInfo = versions[version]
     prods_to_download = []
     dependencies = prodInfo['dependencies']
+    print('dependencies: ' + str(dependencies))
     for d in dependencies:
         firstArch = firstGuid = buildGuid = None
+
+        if str(d['sapCode']) == 'ACR':
+            isContainACR = True
+            if args.skipDependencyACR:
+                continue
+            else:
+                needDownloadACR = questionn('Do you want include CameraRaw in this package')
+                if needDownloadACR:
+                    continue
+        else:
+            isContainACR = False
+
         for p in products[d['sapCode']]['versions']:
             if products[d['sapCode']]['versions'][p]['baseVersion'] == d['version']:
                 if not firstGuid:
@@ -580,15 +595,30 @@ def run_ccdl(products, cdn, sapCodes, allowedPlatforms):
 
     print('\nGenerating driver.xml')
 
+    if args.skipDependencyACR:
+        dependencies = '\n'.join([
+            DRIVER_XML_DEPENDENCY.format(
+                sapCode=d['sapCode'],
+                version=d['version']
+            )
+            for d in prodInfo['dependencies']
+            if d['sapCode'] != 'ACR'
+        ])
+    else:
+        dependencies='\n'.join([
+            DRIVER_XML_DEPENDENCY.format(
+                sapCode=d['sapCode'],
+                version=d['version']
+            )
+            for d in prodInfo['dependencies']
+        ])
+
     driver = DRIVER_XML.format(
         name=product['displayName'],
         sapCode=prodInfo['sapCode'],
         version=prodInfo['productVersion'],
         installPlatform=apPlatform,
-        dependencies='\n'.join([DRIVER_XML_DEPENDENCY.format(
-            sapCode=d['sapCode'],
-            version=d['version']
-        ) for d in prodInfo['dependencies']]),
+        dependencies=dependencies,
         language=installLanguage
     )
 
@@ -630,7 +660,10 @@ if __name__ == '__main__':
                         help="Show and download only those applications that are native to this platform", action='store_true')
     parser.add_argument("--saveXML",
                         help="The path to save the uploaded file products.xml following the transmitted path.\
-                              If the argument is passed without specifying the path, the xml file will be saved in the script folder.", nargs='?', const=True,)
+                              If the argument is passed without specifying the path, the xml file will be saved in the script folder.",
+                        nargs='?', const=True,)
+    parser.add_argument('--skipDependencyACR',
+                        help="Skip downloading CameraRaw for package", action='store_true')
     args = parser.parse_args()
 
     products, cdn, sapCodes, allowedPlatforms = get_products()
