@@ -95,19 +95,19 @@ def r(url, headers=ADOBE_REQ_HEADERS):
     return req.text
 
 
-def get_products_xml(adobeurl):
-    """First stage of parsing the XML."""
-    print('Source URL is: ' + adobeurl)
-    return ET.fromstring(r(adobeurl))
-
-
-def fetch_and_save_xml(url, needSave=True, save_path=None):
-    """Downloads XML and optionally saves it as plain text"""
-    print(f"Fetching XML: {url}")
+def get_products_xml(url):
+    """
+    First stage of parsing the XML.
+    Downloads XML and optionally saves it as plain text
+    """
+    print(f"Source URL is: {url}")
     response = session.get(url, headers=ADOBE_REQ_HEADERS, stream=True)
+    response.encoding = 'utf-8'
     xml_text = response.text
 
-    if needSave and save_path:
+    if args.saveXML:
+        save_path = f"products.xml" if args.saveXML == True else args.saveXML
+
         with open(save_path, "w", encoding="utf-8") as f:
             f.write(xml_text)
         print(f"Saved source XML to {save_path}")
@@ -119,7 +119,7 @@ def fetch_and_save_xml(url, needSave=True, save_path=None):
         tree.write(save_path_beautified, encoding="utf-8", xml_declaration=True)
         print(f"Saved beautified XML to {save_path_beautified}")
 
-    return xml_text
+    return ET.fromstring(xml_text)
 
 
 def parse_products_xml(products_xml, urlVersion, allowedPlatforms):
@@ -305,7 +305,7 @@ def get_products():
             selectedVersion = 6
         else:
             print('Invalid URL version: {}'.format(val))
-    print('')
+    print('Selected version: v' + str(selectedVersion))
 
     if args.Auth:
         ADOBE_REQ_HEADERS['Authorization'] = args.Auth
@@ -348,23 +348,7 @@ def get_products():
     adobeurl = ADOBE_PRODUCTS_XML_URL.format(urlVersion=selectedVersion, installPlatform=productsPlatform)
 
     print('\nDownloading products.xml\n')
-    # products_xml = get_products_xml(adobeurl)
-    if args.saveXML:
-        xmlFile = f"products_v{selectedVersion}.xml" if args.saveXML == True else args.saveXML
-        xml_str = fetch_and_save_xml(
-            adobeurl,
-            True,
-            xmlFile,
-        )
-    else:
-        needSaveXML = questionn('Do you want save products.xml file')
-        xml_str = fetch_and_save_xml(
-            adobeurl,
-            needSaveXML,
-            f"products_v{selectedVersion}.xml",
-        )
-
-    products_xml = ET.fromstring(xml_str)
+    products_xml = get_products_xml(adobeurl)
 
     print('\nParsing products.xml\n')
     products, cdn = parse_products_xml(products_xml, selectedVersion, allowedPlatforms)
@@ -438,7 +422,7 @@ def run_ccdl(products, cdn, sapCodes, allowedPlatforms):
         download_APRO(versions[version], cdn)
         return
 
-    # TODO: Parase languages in the xml
+    # TODO: Parse languages in the xml
     langs = ['en_US', 'en_GB', 'en_IL', 'en_AE', 'es_ES', 'es_MX', 'pt_BR', 'fr_FR', 'fr_CA', 'fr_MA', 'it_IT', 'de_DE', 'nl_NL',
              'ru_RU', 'uk_UA', 'zh_TW', 'zh_CN', 'ja_JP', 'ko_KR', 'pl_PL', 'hu_HU', 'cs_CZ', 'tr_TR', 'sv_SE', 'nb_NO', 'fi_FI', 'da_DK', 'ALL']
     # Detecting Current set default Os language. Fixed.
