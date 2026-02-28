@@ -350,11 +350,12 @@ def get_products():
 
     print('\nDownloading products.xml\n')
     # products_xml = get_products_xml(adobeurl)
-    if args.save_xml:
+    if args.saveXML:
+        xmlFile = f"products_v{selectedVersion}.xml" if args.saveXML == True else args.saveXML
         xml_str = fetch_and_save_xml(
             adobeurl,
             True,
-            args.save_xml,
+            xmlFile,
         )
     else:
         needSaveXML = questionn('Do you want save products.xml file')
@@ -644,6 +645,9 @@ if __name__ == '__main__':
                         help="Skip existing files, e.g. resuming failed downloads", action='store_true')
     parser.add_argument('--nativeOnly',
                         help="Show and download only those applications that are native to this platform", action='store_true')
+    parser.add_argument("--saveXML",
+                        help="The path to save the uploaded file products.xml following the transmitted path.\
+                              If the argument is passed without specifying the path, the xml file will be saved in the script folder.", nargs='?', const=True,)
     args = parser.parse_args()
 
     products, cdn, sapCodes, allowedPlatforms = get_products()
