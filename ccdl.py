@@ -374,6 +374,39 @@ def get_products():
     return products, cdn, sapCodes, allowedPlatforms
 
 
+def remove_dependency_app_json(data: dict, sap_code: str) -> bool:
+    """
+    Deletes the dependency with the specified SAPCode.
+    Returns True if the dependency was found and deleted.
+    """
+
+    deps_container = data.get("Dependencies")
+    if not deps_container:
+        return False
+
+    deps = deps_container.get("Dependency")
+    if not deps:
+        return False
+
+    isACRRemoved = False
+
+    # If the list of dependencies is
+    if isinstance(deps, list):
+        original_len = len(deps)
+        deps_container["Dependency"] = [
+            d for d in deps if d.get("SAPCode") != sap_code
+        ]
+        isACRRemoved = len(deps_container["Dependency"]) != original_len
+
+    # If there is only one dependency (dict instead of list)
+    elif isinstance(deps, dict):
+        if deps.get("SAPCode") == sap_code:
+            deps_container["Dependency"] = []
+            isACRRemoved = True
+
+    return isACRRemoved
+
+
 def run_ccdl(products, cdn, sapCodes, allowedPlatforms):
     """Run Main exicution."""
     sapCode = args.sapCode
@@ -554,6 +587,17 @@ def run_ccdl(products, cdn, sapCodes, allowedPlatforms):
         print('[{}_{}] Saving application.json'.format(s, v))
         with open(app_json_path, 'w') as file:
             json.dump(app_json, file, separators=(',', ':'))
+
+        if args.skipDependencyACR:
+            with open(app_json_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                if remove_dependency_app_json(data, 'ACR'):
+                    backup_path = app_json_path + ".original"
+                    shutil.copy2(app_json_path, backup_path)
+
+                    with open(app_json_path, "w", encoding="utf-8") as f:
+                        json.dump(data, f, indent=4, ensure_ascii=False)
+                        print('[{}_{}] ACR dependency removed'.format(s, v))
 
         print('')
 
