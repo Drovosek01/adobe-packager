@@ -77,11 +77,13 @@ ADOBE_REQ_HEADERS = {
     'X-Adobe-App-Id': 'accc-apps-panel-desktop',
     'User-Agent': 'Adobe Application Manager 2.0',
     'X-Api-Key': 'CC_HD_ESD_1_0',
+    "Accept-Encoding": "gzip",
     'Cookie': 'fg=' + ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(26)) + '======'
 }
 
 ADOBE_DL_HEADERS = {
-    'User-Agent': 'Creative Cloud'
+    'User-Agent': 'Creative Cloud',
+    "Accept-Encoding": "gzip"
 }
 
 ADOBE_CC_MAC_ICON_PATH = '/Library/Application Support/Adobe/Adobe Desktop Common/HDBox/Install.app/Contents/Resources/CreativeCloudInstaller.icns'
@@ -90,7 +92,7 @@ MAC_VOLUME_ICON_PATH = '/System/Library/CoreServices/CoreTypes.bundle/Contents/R
 
 def r(url, headers=ADOBE_REQ_HEADERS):
     """Retrieve a from a url as a string."""
-    req = session.get(url, headers=headers)
+    req = session.get(url, headers=headers, stream=True)
     req.encoding = 'utf-8'
     return req.text
 
@@ -104,7 +106,7 @@ def get_products_xml(adobeurl):
 def fetch_and_save_xml(url, save_path=None, gzip_save=False):
     """Downloads XML and optionally saves it as plain text and gzip."""
     print(f"Fetching XML: {url}")
-    response = session.get(url, headers=ADOBE_REQ_HEADERS)
+    response = session.get(url, headers=ADOBE_REQ_HEADERS, stream=True)
     xml_text = response.text
 
     if save_path:
