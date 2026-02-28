@@ -2,6 +2,12 @@ This is the Adobe Offline Package downloader.
 
 CHANGELOG
 
+(0.2.1)
++ Added option to save products.xml with beautified version as local file
++ Added 'Accept-Encoding: gzip' for faster downloading products.xml
++ Added argument '--nativeOnly' for downloading only native packages for running platform
++ Added passing arguments from .command file to .py file
+
 (0.2.0)
 + Added v5 & v6 URL (Support Photoshop BETA)
 + Added full support for Adobe Acrobat and partial support for XD (Need bearer_token)

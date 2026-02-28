@@ -30,8 +30,7 @@ except ImportError:
 session = requests.sessions.Session()
 
 VERSION = 4
-VERSION_STR = '0.2.0'
-CODE_QUALITY = 'Mildly_AWFUL'
+VERSION_STR = '0.2.1'
 
 
 # path to dir where current file
