@@ -338,7 +338,6 @@ def get_products():
 
     print('\nDownloading products.xml\n')
     # products_xml = get_products_xml(adobeurl)
-    print(args.save_xml)
     if args.save_xml:
         xml_str = fetch_and_save_xml(
             adobeurl,
