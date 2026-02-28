@@ -310,33 +310,33 @@ def get_products():
     if args.Auth:
         ADOBE_REQ_HEADERS['Authorization'] = args.Auth
 
-    isAppleSilicon = -1
+    isAppleSiliconOnly = -1
     allowedPlatforms = ['macuniversal']
 
     if args.nativeOnly:
         if platform.machine() == 'arm64':
-            isAppleSilicon = True
+            isAppleSiliconOnly = True
             allowedPlatforms.append('macarm64')
         else:
-            isAppleSilicon = False
+            isAppleSiliconOnly = False
             allowedPlatforms.append('osx10-64')
             allowedPlatforms.append('osx10')
     else:
         if args.arch:
             if args.arch.lower() == 'x86_64' or args.arch.lower() == 'x64' or args.arch.lower() == 'intel':
-                isAppleSilicon = False
+                isAppleSiliconOnly = False
             elif args.arch.lower() == 'arm64' or args.arch.lower() == 'arm' or args.arch.lower() == 'm1':
-                isAppleSilicon = True
+                isAppleSiliconOnly = True
             else:
                 print('Invalid argument "{}" for {}'.format(args.arch, 'architecture'))
         
-        if isAppleSilicon == -1:
+        if isAppleSiliconOnly == -1:
             if platform.machine() == 'arm64':
-                isAppleSilicon = questiony('Do you want to make Apple Silicon native packages')
+                isAppleSiliconOnly = questiony('Do you want to make Apple Silicon native packages')
             else:
-                isAppleSilicon = False
+                isAppleSiliconOnly = False
         
-        if isAppleSilicon:
+        if isAppleSiliconOnly:
             allowedPlatforms.append('macarm64')
             print('Note: If the Adobe program is NOT listed here, there is no native Apple Silicon version.')
             print('      Use the non native version with Rosetta 2 until an Apple Silicon version is available.')
@@ -515,7 +515,6 @@ def run_ccdl(products, cdn, sapCodes, allowedPlatforms):
     prodInfo = versions[version]
     prods_to_download = []
     dependencies = prodInfo['dependencies']
-    print('dependencies: ' + str(dependencies))
     for d in dependencies:
         firstArch = firstGuid = buildGuid = None
 
@@ -576,6 +575,7 @@ def run_ccdl(products, cdn, sapCodes, allowedPlatforms):
         s, v = p['sapCode'], p['version']
         product_dir = os.path.join(products_dir, s)
         app_json_path = os.path.join(product_dir, 'application.json')
+        backup_path = app_json_path + ".original"
 
         print('[{}_{}] Downloading application.json'.format(s, v))
         app_json = get_application_json(p['buildGuid'])
@@ -592,8 +592,8 @@ def run_ccdl(products, cdn, sapCodes, allowedPlatforms):
             with open(app_json_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
                 if remove_dependency_app_json(data, 'ACR'):
-                    backup_path = app_json_path + ".original"
-                    shutil.copy2(app_json_path, backup_path)
+                    if not os.path.exists(backup_path):
+                        shutil.copy2(app_json_path, backup_path)
 
                     with open(app_json_path, "w", encoding="utf-8") as f:
                         json.dump(data, f, indent=4, ensure_ascii=False)
