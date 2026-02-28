@@ -12,7 +12,6 @@ import sys
 from collections import OrderedDict
 from subprocess import PIPE, Popen
 from xml.etree import ElementTree as ET
-import gzip
 
 import requests
 
@@ -103,8 +102,8 @@ def get_products_xml(adobeurl):
     return ET.fromstring(r(adobeurl))
 
 
-def fetch_and_save_xml(url, save_path=None, gzip_save=False):
-    """Downloads XML and optionally saves it as plain text and gzip."""
+def fetch_and_save_xml(url, save_path=None):
+    """Downloads XML and optionally saves it as plain text"""
     print(f"Fetching XML: {url}")
     response = session.get(url, headers=ADOBE_REQ_HEADERS, stream=True)
     xml_text = response.text
@@ -112,13 +111,14 @@ def fetch_and_save_xml(url, save_path=None, gzip_save=False):
     if save_path:
         with open(save_path, "w", encoding="utf-8") as f:
             f.write(xml_text)
-        print(f"Saved XML to {save_path}")
+        print(f"Saved source XML to {save_path}")
 
-    if gzip_save and save_path:
-        gz_path = save_path + ".gz"
-        with gzip.open(gz_path, "wt", encoding="utf-8") as gz:
-            gz.write(xml_text)
-        print(f"Saved GZIP XML to {gz_path}")
+        root, ext = os.path.splitext(save_path)
+        save_path_beautified = root + ".beautified.xml"
+        tree = ET.parse(save_path)
+        ET.indent(tree, space="  ", level=0)
+        tree.write(save_path_beautified, encoding="utf-8", xml_declaration=True)
+        print(f"Saved beautified XML to {save_path_beautified}")
 
     return xml_text
 
@@ -342,8 +342,7 @@ def get_products():
 
     xml_str = fetch_and_save_xml(
         adobeurl,
-        save_path=xml_file,
-        gzip_save=args.xml_gzip
+        save_path=xml_file
     )
 
     products_xml = ET.fromstring(xml_str)
@@ -626,8 +625,6 @@ if __name__ == '__main__':
                         help="Skip existing files, e.g. resuming failed downloads", action='store_true')
     parser.add_argument("--save_xml",
                         help="Path to save downloaded products.xml file", action="store")
-    parser.add_argument("--xml_gzip",
-                        help="Also save products.xml in gzip format", action="store_true")
     args = parser.parse_args()
 
     products, cdn, sapCodes, allowedPlatforms = get_products()
