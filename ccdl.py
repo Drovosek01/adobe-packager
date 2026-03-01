@@ -171,7 +171,7 @@ def skip_product(product) -> bool:
 
 def parse_products_xml(products_xml, urlVersion, allowedPlatforms):
     """2nd stage of parsing the XML."""
-    if urlVersion == 6:
+    if int(urlVersion) == 6:
         prefix = 'channels/'
     else:
         prefix = ''
