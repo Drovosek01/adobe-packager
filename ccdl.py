@@ -30,8 +30,7 @@ except ImportError:
 session = requests.sessions.Session()
 
 VERSION = 4
-VERSION_STR = '0.2.1'
-
+VERSION_STR = '0.3.0'
 
 # path to dir where current file
 script_dir = os.path.dirname(os.path.realpath(__file__))

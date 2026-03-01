@@ -2,6 +2,15 @@ This is the Adobe Offline Package downloader.
 
 CHANGELOG
 
+(0.3.0)
++ Added argument '--skipDependencyACR' and prompt for prevent downloading CameraRaw and remove this dependency from application.json and driver.xml
++ Added argument '--skipNonCorePackages' for skip downloading packages whose type is specified as non-core in application.json files and remove it from the file
++ Added argument '--skipModuleC4D' for skip downloading Cinema 4D packages and remove it from application.json files
++ Added argument '--skipModulesSpeechToText' for skip downloading Speech to Text packages and remove it from application.json files
++ Added argument '--removeCheckCompatibility' for remove point CheckCompatibility from SystemRequirement from application.json files
++ Added argument '--notWrapInApp' for just download adobe product to folder and not warp it into application
++ Fixed bug when downloading packages for not selected platform (when for macuniversal app downloaded macarm64 and osx10-64 packages but need only macarm64)
+
 (0.2.1)
 + Added option to save products.xml with beautified version as local file
 + Added 'Accept-Encoding: gzip' for faster downloading products.xml
