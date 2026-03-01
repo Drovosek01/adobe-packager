@@ -8,6 +8,7 @@ import platform
 import random
 import shutil
 import string
+import re
 import sys
 from collections import OrderedDict
 from subprocess import PIPE, Popen
@@ -34,6 +35,7 @@ VERSION_STR = '0.3.0'
 
 # path to dir where current file
 script_dir = os.path.dirname(os.path.realpath(__file__))
+macos_version_current = platform.mac_ver()[0]
 
 ADOBE_PRODUCTS_XML_URL = 'https://prod-rel-ffc-ccm.oobesaas.adobe.com/adobe-ffc-external/core/v{urlVersion}/products/all?_type=xml&channel=ccm&channel=sti&platform={installPlatform}&productType=Desktop'
 ADOBE_APPLICATION_JSON_URL = 'https://cdn-ffc.oobesaas.adobe.com/core/v3/applications'
@@ -79,6 +81,31 @@ ADOBE_CC_MAC_ICON_PATH = '/Library/Application Support/Adobe/Adobe Desktop Commo
 MAC_VOLUME_ICON_PATH = '/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/CDAudioVolumeIcon.icns'
 
 
+def compare_versions(v1, v2):
+    """
+    Compares two version strings.
+    Returns:
+     1, if v1 > v2
+    -1, if v1 < v2
+     0, if v1 == v2
+    """
+    # Split the strings at the dot and convert each part to an int
+    parts1 = [int(x) for x in str(v1).split('.')]
+    parts2 = [int(x) for x in str(v2).split('.')]
+    
+    # We equalize the length of the lists by adding zeros (for example, 13 becomes 13.0.0)
+    max_len = max(len(parts1), len(parts2))
+    parts1.extend([0] * (max_len - len(parts1)))
+    parts2.extend([0] * (max_len - len(parts2)))
+    
+    if parts1 > parts2:
+        return 1
+    elif parts1 < parts2:
+        return -1
+    else:
+        return 0
+
+
 def r(url, headers=ADOBE_REQ_HEADERS):
     """Retrieve a from a url as a string."""
     req = session.get(url, headers=headers, stream=True)
@@ -113,20 +140,55 @@ def get_products_xml(url):
     return ET.fromstring(xml_text)
 
 
+def skip_product(product) -> bool:
+    """
+    Based on various parameters, we determine whether the submitted product should be
+    included in the final sample or whether it should be skipped and not shown in the future.
+    """
+
+    min_supported_os = product.find('platforms/platform/systemCompatibility/operatingSystem/range')
+    if min_supported_os == None:
+        return False
+    
+    min_supported_os_text = min_supported_os.text
+    if len(min_supported_os_text) == 0:
+        return False
+    
+    if args.onlyWithSupportOS:
+        # leave only digits and dots in the string
+        min_supported_os_ver = re.sub(r"[^\d.]", "", min_supported_os_text)
+        result_comparing = compare_versions(min_supported_os_ver, args.onlyWithSupportOS)
+
+        # if the system requirements of the product require an OS
+        # newer than the one specified in the argument, then skip this product
+        if result_comparing > 0:
+            return True
+        else:
+            return False
+    else:
+        return False
+
+
 def parse_products_xml(products_xml, urlVersion, allowedPlatforms):
     """2nd stage of parsing the XML."""
     if urlVersion == 6:
         prefix = 'channels/'
     else:
         prefix = ''
+    
     cdn = products_xml.find(prefix + 'channel/cdn/secure').text
     products = {}
     parent_map = {c: p for p in products_xml.iter() for c in p}
+
     for p in products_xml.findall(prefix + 'channel/products/product'):
+        if skip_product(p):
+            continue
+
         sap = p.get('id')
         hidden = parent_map[parent_map[p]].get('name') != 'ccm'
         displayName = p.find('displayName').text
         productVersion = p.get('version')
+
         if not products.get(sap):
             products[sap] = {
                 'hidden': hidden,
@@ -947,6 +1009,10 @@ if __name__ == '__main__':
                         help="Remove point CheckCompatibility from SystemRequirement from application.json files", action='store_true')
     parser.add_argument('--notWrapInApp',
                         help="Just download adobe product to folder and not warp it into application", action='store_true')
+    parser.add_argument('--onlyWithSupportOS',
+                        help="Show only applications supported on the specified macOS version. \
+                            If you pass just an argument without parameters, the current macOS version on which the script is running will be selected.",
+                        nargs='?', const=macos_version_current,)
     args = parser.parse_args()
 
     products, cdn, sapCodes, allowedPlatforms = get_products()
