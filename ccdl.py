@@ -445,9 +445,9 @@ def remove_non_core_packages(data: dict) -> bool:
     return isNonCoresRemoved
 
 
-def remove_cinema4d_modules(data: dict) -> bool:
+def remove_packages_by_modules_refs(data: dict, substr: str) -> bool:
     """
-    Removes modules with 'Cinema 4D' in the DisplayName,
+    Removes modules with substring in the DisplayName,
     as well as their associated packages.
     Returns True if the 1 or more module found.
     """
@@ -475,7 +475,7 @@ def remove_cinema4d_modules(data: dict) -> bool:
 
     for module in modules:
         display_name = module.get("DisplayName", "")
-        if "Cinema 4D" in display_name:
+        if substr.lower() in display_name.lower():
             isModuleRemoved = True
             removed_modules.append(module.get("Id"))
 
@@ -499,7 +499,7 @@ def remove_cinema4d_modules(data: dict) -> bool:
     # removing modules
     new_modules = [
         m for m in modules
-        if "Cinema 4D" not in m.get("DisplayName", "")
+        if substr.lower() not in m.get("DisplayName", "").lower()
     ]
 
     modules_container["Module"] = new_modules
@@ -714,7 +714,7 @@ def run_ccdl(products, cdn, sapCodes, allowedPlatforms):
         if args.skipModuleC4D:
             with open(app_json_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
-                if remove_cinema4d_modules(data):
+                if remove_packages_by_modules_refs(data, 'Cinema 4D'):
                     if not os.path.exists(backup_path):
                         shutil.copy2(app_json_path, backup_path)
 
