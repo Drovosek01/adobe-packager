@@ -338,26 +338,20 @@ def get_products():
 
     selectedVersion = None
     if args.urlVersion:
-        if args.urlVersion.lower() == "v4" or args.urlVersion == "4":
-            selectedVersion = 4
-        elif args.urlVersion.lower() == "v5" or args.urlVersion == "5":
-            selectedVersion = 5
-        elif args.urlVersion.lower() == "v6" or args.urlVersion == "6":
-            selectedVersion = 6
-        else:
+        cleaned_val = re.sub(r"[^\d]", "", args.urlVersion)
+        if len(cleaned_val) == 0:
             print('Invalid argument "{}" for {}'.format(args.urlVersion, 'URL version'))
             exit(1)
+        else:
+            selectedVersion = cleaned_val
 
     while not selectedVersion:
-        val = input('\nPlease enter the URL version(v4/v5/v6) for downloading products.xml, or nothing for v6: ') or 'v6'
-        if val == 'v4' or val == '4':
-            selectedVersion = 4
-        elif val == 'v5' or val == '5':
-            selectedVersion = 5
-        elif val == 'v6' or val == '6':
-            selectedVersion = 6
-        else:
+        val = input('\nPlease enter the URL version (usually v4/v5/v6) for downloading products.xml, or nothing for v6: ') or '6'
+        cleaned_val = re.sub(r"[^\d]", "", val)
+        if len(cleaned_val) == 0:
             print('Invalid URL version: {}'.format(val))
+        else:
+            selectedVersion = cleaned_val
     print('Selected version: v' + str(selectedVersion))
 
     if args.Auth:
