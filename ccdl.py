@@ -722,6 +722,18 @@ def run_ccdl(products, cdn, sapCodes, allowedPlatforms):
                         json.dump(data, f, indent=4, ensure_ascii=False)
                         print('[{}_{}] Maxon Cinema 4D packages removed'.format(s, v))
 
+        if args.skipModulesSpeechToText:
+            with open(app_json_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                if remove_packages_by_modules_refs(data, 'Speech to Text'):
+                    if not os.path.exists(backup_path):
+                        shutil.copy2(app_json_path, backup_path)
+
+                    with open(app_json_path, "w", encoding="utf-8") as f:
+                        json.dump(data, f, indent=4, ensure_ascii=False)
+                        print('[{}_{}] Speech to Text packages removed'.format(s, v))
+
+
         print('')
 
     print('Downloading...')
@@ -847,6 +859,8 @@ if __name__ == '__main__':
                         help="Skip downloading packages whose type is specified as non-core in application.json files.", action='store_true')
     parser.add_argument('--skipModuleC4D',
                         help="Skip downloading Cinema 4D packages whose type is specified as non-core in application.json files usually for After Effects only", action='store_true')
+    parser.add_argument('--skipModulesSpeechToText',
+                        help="Skip downloading Speech to Text packages whose type is specified as non-core in application.json files usually for Premiere Pro only", action='store_true')
     args = parser.parse_args()
 
     products, cdn, sapCodes, allowedPlatforms = get_products()
