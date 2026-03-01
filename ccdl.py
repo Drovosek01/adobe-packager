@@ -426,8 +426,10 @@ def remove_non_core_packages(data: dict) -> bool:
     # If the list of packages is
     if isinstance(packages, list):
         original_len = len(packages)
+        # leave only those packages where Type is present (not None) and it is not equal to "non-core"
         packages_container["Package"] = [
-            p for p in packages if p.get("Type") != "non-core"
+            p for p in packages 
+               if p.get("Type") is not None and p.get("Type") != "non-core"
         ]
         isNonCoresRemoved = len(packages_container["Package"]) != original_len
 
@@ -437,6 +439,9 @@ def remove_non_core_packages(data: dict) -> bool:
             packages_container["Package"] = []
             isNonCoresRemoved = True
 
+    if "Modules" in data and "Module" in data.get("Modules", {}):
+        data["Modules"]["Module"] = []
+        
     return isNonCoresRemoved
 
 
@@ -655,6 +660,8 @@ def run_ccdl(products, cdn, sapCodes, allowedPlatforms):
         print('\n[{}_{}] Parsing available packages'.format(s, v))
         core_pkg_count = 0
         noncore_pkg_count = 0
+        typeless_pkg_count = 0
+        
         packages = app_json['Packages']['Package']
         download_urls = []
         for pkg in packages:
@@ -664,6 +671,13 @@ def run_ccdl(products, cdn, sapCodes, allowedPlatforms):
             else:
                 if args.skipNonCorePackages:
                     continue
+
+                if pkg.get('Type') and pkg['Type'] == 'non-core':
+                    noncore_pkg_count += 1
+                    download_urls.append(cdn + pkg['Path'])
+                if pkg.get('Type') is None:
+                    typeless_pkg_count += 1
+                    download_urls.append(cdn + pkg['Path'])
                 # TODO: actually parse `Condition` and check it properly (and maybe look for & add support for conditions other than installLanguage)
                 language_is_suitable = (
                         installLanguage == "ALL"
@@ -673,14 +687,13 @@ def run_ccdl(products, cdn, sapCodes, allowedPlatforms):
                         or '[installLanguage]==' + oslang in pkg['Condition']
                 )
 
-                noncore_pkg_count += 1
                 if language_is_suitable:
                     download_urls.append(cdn + pkg['Path'])
 
         if args.skipNonCorePackages:
             print('[{}_{}] Selected {} core packages'.format(s, v, core_pkg_count))
         else:
-            print('[{}_{}] Selected {} core packages and {} non-core packages'.format(s, v, core_pkg_count, noncore_pkg_count))
+            print('[{}_{}] Selected {} core packages and {} non-core packages and {} packages without type'.format(s, v, core_pkg_count, noncore_pkg_count, typeless_pkg_count))
 
         for url in download_urls:
             download_file(url, product_dir, s, v)
