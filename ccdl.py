@@ -118,12 +118,26 @@ def get_products_xml(url):
     First stage of parsing the XML.
     Downloads XML and optionally saves it as plain text
     """
-    print(f"Source URL is: {url}")
-    response = session.get(url, headers=ADOBE_REQ_HEADERS, stream=True)
-    response.encoding = 'utf-8'
-    xml_text = response.text
+    if args.useSavedXML:
+        given_path = f"products.xml" if args.useSavedXML == True else args.useSavedXML
+        file_path = os.path.abspath(given_path)
 
-    if args.saveXML:
+        if not os.path.exists(file_path):
+            print(f"ERROR: Not found XML-file for parse: {file_path}")
+            exit(1)
+        else:
+            print(f"\nSource XML-file for parse is: {file_path}")
+
+        with open(file_path, "r", encoding="utf-8") as f:
+            xml_text= f.read()
+    else:
+        print('\nDownloading products.xml\n')
+        print(f"Source URL is: {url}")
+        response = session.get(url, headers=ADOBE_REQ_HEADERS, stream=True)
+        response.encoding = 'utf-8'
+        xml_text = response.text
+
+    if args.saveXML and not args.useSavedXML:
         save_path = f"products.xml" if args.saveXML == True else args.saveXML
 
         with open(save_path, "w", encoding="utf-8") as f:
@@ -394,7 +408,6 @@ def get_products():
     productsPlatform = 'osx10-64,osx10,macarm64,macuniversal'
     adobeurl = ADOBE_PRODUCTS_XML_URL.format(urlVersion=selectedVersion, installPlatform=productsPlatform)
 
-    print('\nDownloading products.xml\n')
     products_xml = get_products_xml(adobeurl)
 
     print('\nParsing products.xml\n')
@@ -990,6 +1003,10 @@ if __name__ == '__main__':
     parser.add_argument("--saveXML",
                         help="The path to save the uploaded file products.xml following the transmitted path.\
                               If the argument is passed without specifying the path, the xml file will be saved in the script folder.",
+                        nargs='?', const=True,)
+    parser.add_argument("--useSavedXML",
+                        help="The path to xml-file like products.xml. If the argument is passed without \
+                              specifying the path, the xml-file will be products.xml in the script folder.",
                         nargs='?', const=True,)
     parser.add_argument('--skipDependencyACR',
                         help="Skip downloading CameraRaw for package", action='store_true')
