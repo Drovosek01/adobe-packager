@@ -35,14 +35,6 @@ VERSION_STR = '0.2.1'
 
 # path to dir where current file
 script_dir = os.path.dirname(os.path.realpath(__file__))
-applescript_path = os.path.join(script_dir, "install_script.applescript")
-
-try:
-    with open(applescript_path, "r", encoding="utf-8") as f:
-        INSTALL_APP_APPLE_SCRIPT = f.read()
-except FileNotFoundError:
-    print(f"ERROR: File not found - {applescript_path}")
-    INSTALL_APP_APPLE_SCRIPT = ""
 
 ADOBE_PRODUCTS_XML_URL = 'https://prod-rel-ffc-ccm.oobesaas.adobe.com/adobe-ffc-external/core/v{urlVersion}/products/all?_type=xml&channel=ccm&channel=sti&platform={installPlatform}&productType=Desktop'
 ADOBE_APPLICATION_JSON_URL = 'https://cdn-ffc.oobesaas.adobe.com/core/v3/applications'
@@ -706,6 +698,15 @@ def run_ccdl(products, cdn, sapCodes, allowedPlatforms):
     else:
         install_app_name = 'Install {}_{}-{}-{}.app'.format(sapCode, version, installLanguage, apPlatform)
         result_path = os.path.join(dest, install_app_name)
+        applescript_path = os.path.join(script_dir, "install_script.applescript")
+
+        try:
+            with open(applescript_path, "r", encoding="utf-8") as f:
+                INSTALL_APP_APPLE_SCRIPT = f.read()
+        except FileNotFoundError:
+            print(f"ERROR: File not found - {applescript_path}")
+            exit(1)
+
         print('\nCreating {}'.format(install_app_name))
 
         with Popen(['/usr/bin/osacompile', '-l', 'JavaScript', '-o', os.path.join(dest, result_path)], stdin=PIPE) as p:
