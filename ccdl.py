@@ -448,7 +448,7 @@ def remove_non_core_packages(data: dict) -> bool:
 def remove_packages_by_arch(data: dict, skipPlatformStr: str) -> bool:
     """
     Deletes all packages for platform/arch what need skip from application.json.
-    Returns True if the 1 or more 'non-core' package was found and deleted.
+    Returns True if the 1 or more package was found and deleted.
     """
 
     packages_container = data.get("Packages")
@@ -472,6 +472,26 @@ def remove_packages_by_arch(data: dict, skipPlatformStr: str) -> bool:
         isPackagesRemoved = len(packages_container["Package"]) != original_len
 
     return isPackagesRemoved
+
+
+def remove_check_compatibility(data: dict) -> bool:
+    """
+    Delete point CheckCompatibility from SystemRequirement from application.json file
+    Returns True if the 1 or more points was found and deleted.
+    """
+    # maybe MinimumSupportedClientVersion need remove too?
+    
+    systemreq_container = data.get("SystemRequirement")
+    if not systemreq_container:
+        return False
+    
+    compatibility = systemreq_container.get("CheckCompatibility")
+    if not compatibility:
+        return False
+    
+    data["SystemRequirement"].pop("CheckCompatibility", None)
+    
+    return True
 
 
 def remove_packages_by_modules_refs(data: dict, substr: str) -> bool:
@@ -767,6 +787,18 @@ def run_ccdl(products, cdn, sapCodes, allowedPlatforms):
                         app_json = data
                         print('[{}_{}] Speech to Text packages removed'.format(s, v))
 
+        if args.removeCheckCompatibility:
+            with open(app_json_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                if remove_check_compatibility(data):
+                    if not os.path.exists(backup_path):
+                        shutil.copy2(app_json_path, backup_path)
+
+                    with open(app_json_path, "w", encoding="utf-8") as f:
+                        json.dump(data, f, indent=4, ensure_ascii=False)
+                        app_json = data
+                        print('[{}_{}] CheckCompatibility removed'.format(s, v))
+
         if len(skipPlatform) > 0:
             with open(app_json_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
@@ -906,6 +938,8 @@ if __name__ == '__main__':
                         help="Skip downloading Cinema 4D packages whose type is specified as non-core in application.json files usually for After Effects only", action='store_true')
     parser.add_argument('--skipModulesSpeechToText',
                         help="Skip downloading Speech to Text packages whose type is specified as non-core in application.json files usually for Premiere Pro only", action='store_true')
+    parser.add_argument('--removeCheckCompatibility',
+                        help="Remove point CheckCompatibility from SystemRequirement from application.json files", action='store_true')
     args = parser.parse_args()
 
     products, cdn, sapCodes, allowedPlatforms = get_products()
