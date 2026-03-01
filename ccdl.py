@@ -441,8 +441,71 @@ def remove_non_core_packages(data: dict) -> bool:
 
     if "Modules" in data and "Module" in data.get("Modules", {}):
         data["Modules"]["Module"] = []
-        
+
     return isNonCoresRemoved
+
+
+def remove_cinema4d_modules(data: dict) -> bool:
+    """
+    Removes modules with 'Cinema 4D' in the DisplayName,
+    as well as their associated packages.
+    Returns True if the 1 or more module found.
+    """
+
+    removed_packages = []
+    removed_modules = []
+    isModuleRemoved = False
+
+    modules_container = data.get("Modules")
+    if not modules_container:
+        return False
+    modules = modules_container.get("Module")
+    if not modules:
+        return False
+
+    packages_container = data.get("Packages")
+    if not packages_container:
+        return False
+    packages = packages_container.get("Package")
+    if not packages:
+        return False
+
+    # collecting package names for removal
+    package_names_to_remove = set()
+
+    for module in modules:
+        display_name = module.get("DisplayName", "")
+        if "Cinema 4D" in display_name:
+            isModuleRemoved = True
+            removed_modules.append(module.get("Id"))
+
+            ref = module.get("ReferencePackages", {}).get("ReferencePackage", [])
+            if isinstance(ref, list):
+                package_names_to_remove.update(ref)
+            elif isinstance(ref, str):
+                package_names_to_remove.add(ref)
+
+    # removing packages
+    new_packages = []
+    for pkg in packages:
+        name = pkg.get("PackageName")
+        if name in package_names_to_remove:
+            removed_packages.append(name)
+        else:
+            new_packages.append(pkg)
+
+    packages_container["Package"] = new_packages
+
+    # removing modules
+    new_modules = [
+        m for m in modules
+        if "Cinema 4D" not in m.get("DisplayName", "")
+    ]
+
+    modules_container["Module"] = new_modules
+    packages_container["Package"] = new_packages
+
+    return isModuleRemoved
 
 
 def run_ccdl(products, cdn, sapCodes, allowedPlatforms):
@@ -648,9 +711,20 @@ def run_ccdl(products, cdn, sapCodes, allowedPlatforms):
                         json.dump(data, f, indent=4, ensure_ascii=False)
                         print('[{}_{}] Non-Core packages removed'.format(s, v))
 
+        if args.skipModuleC4D:
+            with open(app_json_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                if remove_cinema4d_modules(data):
+                    if not os.path.exists(backup_path):
+                        shutil.copy2(app_json_path, backup_path)
+
+                    with open(app_json_path, "w", encoding="utf-8") as f:
+                        json.dump(data, f, indent=4, ensure_ascii=False)
+                        print('[{}_{}] Maxon Cinema 4D packages removed'.format(s, v))
+
         print('')
 
-    print('Downloading...\n')
+    print('Downloading...')
 
     for p in prods_to_download:
         s, v = p['sapCode'], p['version']
@@ -771,6 +845,8 @@ if __name__ == '__main__':
                         help="Skip downloading CameraRaw for package", action='store_true')
     parser.add_argument('--skipNonCorePackages',
                         help="Skip downloading packages whose type is specified as non-core in application.json files.", action='store_true')
+    parser.add_argument('--skipModuleC4D',
+                        help="Skip downloading Cinema 4D packages whose type is specified as non-core in application.json files usually for After Effects only", action='store_true')
     args = parser.parse_args()
 
     products, cdn, sapCodes, allowedPlatforms = get_products()
