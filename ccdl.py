@@ -480,7 +480,7 @@ def remove_check_compatibility(data: dict) -> bool:
     Returns True if the 1 or more points was found and deleted.
     """
     # maybe MinimumSupportedClientVersion need remove too?
-    
+
     systemreq_container = data.get("SystemRequirement")
     if not systemreq_container:
         return False
@@ -697,29 +697,34 @@ def run_ccdl(products, cdn, sapCodes, allowedPlatforms):
     prods_to_download.insert(
         0, {'sapCode': prodInfo['sapCode'], 'version': prodInfo['productVersion'], 'buildGuid': prodInfo['buildGuid']})
     apPlatform = prodInfo['apPlatform']
-    install_app_name = 'Install {}_{}-{}-{}.app'.format(
-        sapCode, version, installLanguage, apPlatform)
-    install_app_path = os.path.join(dest, install_app_name)
+
+    if args.notWrapInApp:
+        dest_folder_name = 'Adobe {}_{}-{}-{}'.format(sapCode, version, installLanguage, apPlatform)
+        result_path = os.path.join(dest, dest_folder_name)
+        os.makedirs(result_path, exist_ok=True)
+        products_dir = os.path.join(result_path, 'products')
+    else:
+        install_app_name = 'Install {}_{}-{}-{}.app'.format(sapCode, version, installLanguage, apPlatform)
+        result_path = os.path.join(dest, install_app_name)
+        print('\nCreating {}'.format(install_app_name))
+
+        with Popen(['/usr/bin/osacompile', '-l', 'JavaScript', '-o', os.path.join(dest, result_path)], stdin=PIPE) as p:
+            p.communicate(INSTALL_APP_APPLE_SCRIPT.encode('utf-8'))
+
+        if os.path.isfile(ADOBE_CC_MAC_ICON_PATH):
+            icon_path = ADOBE_CC_MAC_ICON_PATH
+        else:
+            icon_path = MAC_VOLUME_ICON_PATH
+        shutil.copyfile(icon_path, os.path.join(result_path,
+                        'Contents', 'Resources', 'applet.icns'))
+
+        products_dir = os.path.join(
+            result_path, 'Contents', 'Resources', 'products')
+    
     print('sapCode: ' + sapCode)
     print('version: ' + version)
     print('installLanguage: ' + installLanguage)
-    print('dest: ' + install_app_path)
-    print(prods_to_download)
-
-    print('\nCreating {}'.format(install_app_name))
-
-    with Popen(['/usr/bin/osacompile', '-l', 'JavaScript', '-o', os.path.join(dest, install_app_path)], stdin=PIPE) as p:
-        p.communicate(INSTALL_APP_APPLE_SCRIPT.encode('utf-8'))
-
-    if os.path.isfile(ADOBE_CC_MAC_ICON_PATH):
-        icon_path = ADOBE_CC_MAC_ICON_PATH
-    else:
-        icon_path = MAC_VOLUME_ICON_PATH
-    shutil.copyfile(icon_path, os.path.join(install_app_path,
-                    'Contents', 'Resources', 'applet.icns'))
-
-    products_dir = os.path.join(
-        install_app_path, 'Contents', 'Resources', 'products')
+    print('dest: ' + result_path)
 
     print('\nPreparing...\n')
 
@@ -894,7 +899,7 @@ def run_ccdl(products, cdn, sapCodes, allowedPlatforms):
         f.write(driver)
         f.close()
 
-    print('\nPackage successfully created. Run {} to install.'.format(install_app_path))
+    print('\nPackage successfully created. Run {} to install.'.format(result_path))
     return
 
 
@@ -940,6 +945,8 @@ if __name__ == '__main__':
                         help="Skip downloading Speech to Text packages whose type is specified as non-core in application.json files usually for Premiere Pro only", action='store_true')
     parser.add_argument('--removeCheckCompatibility',
                         help="Remove point CheckCompatibility from SystemRequirement from application.json files", action='store_true')
+    parser.add_argument('--notWrapInApp',
+                        help="Just download adobe product to folder and not warp it into application", action='store_true')
     args = parser.parse_args()
 
     products, cdn, sapCodes, allowedPlatforms = get_products()
