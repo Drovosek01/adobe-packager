@@ -445,6 +445,35 @@ def remove_non_core_packages(data: dict) -> bool:
     return isNonCoresRemoved
 
 
+def remove_packages_by_arch(data: dict, skipPlatformStr: str) -> bool:
+    """
+    Deletes all packages for platform/arch what need skip from application.json.
+    Returns True if the 1 or more 'non-core' package was found and deleted.
+    """
+
+    packages_container = data.get("Packages")
+    if not packages_container:
+        return False
+    
+    packages = packages_container.get("Package")
+    if not packages:
+        return False
+
+    isPackagesRemoved = False
+
+    # If the list of packages is
+    if isinstance(packages, list):
+        original_len = len(packages)
+        # leave only those packages where value Condition is present (not None) and it is not equal to "[OSArchitecture]==skipPlatformStr"
+        packages_container["Package"] = [
+            p for p in packages 
+               if p.get("Condition") is None or p.get("Condition") != "[OSArchitecture]=={}".format(skipPlatformStr)
+        ]
+        isPackagesRemoved = len(packages_container["Package"]) != original_len
+
+    return isPackagesRemoved
+
+
 def remove_packages_by_modules_refs(data: dict, substr: str) -> bool:
     """
     Removes modules with substring in the DisplayName,
@@ -509,9 +538,14 @@ def remove_packages_by_modules_refs(data: dict, substr: str) -> bool:
 
 
 def run_ccdl(products, cdn, sapCodes, allowedPlatforms):
-    """Run Main exicution."""
+    """Run Main execution."""
     sapCode = args.sapCode
-    isContainACR = False
+    skipPlatform = ''
+
+    if ('macarm64' in allowedPlatforms) and ('osx10-64' not in allowedPlatforms):
+        skipPlatform = 'x64'
+    elif ('osx10-64' in allowedPlatforms) and ('macarm64' not in allowedPlatforms):
+        skipPlatform = 'arm64'
     
     if not sapCode:
         for s, d in sapCodes.items():
@@ -620,15 +654,12 @@ def run_ccdl(products, cdn, sapCodes, allowedPlatforms):
         firstArch = firstGuid = buildGuid = None
 
         if str(d['sapCode']) == 'ACR':
-            isContainACR = True
             if args.skipDependencyACR:
                 continue
             else:
                 needDownloadACR = questionn('Do you want include CameraRaw in this package')
                 if needDownloadACR:
                     continue
-        else:
-            isContainACR = False
 
         for p in products[d['sapCode']]['versions']:
             if products[d['sapCode']]['versions'][p]['baseVersion'] == d['version']:
@@ -680,7 +711,6 @@ def run_ccdl(products, cdn, sapCodes, allowedPlatforms):
 
         print('[{}_{}] Downloading application.json'.format(s, v))
         app_json = get_application_json(p['buildGuid'])
-        p['application_json'] = app_json
 
         print('[{}_{}] Creating folder for product'.format(s, v))
         os.makedirs(product_dir, exist_ok=True)
@@ -698,6 +728,7 @@ def run_ccdl(products, cdn, sapCodes, allowedPlatforms):
 
                     with open(app_json_path, "w", encoding="utf-8") as f:
                         json.dump(data, f, indent=4, ensure_ascii=False)
+                        app_json = data
                         print('[{}_{}] ACR dependency removed'.format(s, v))
 
         if args.skipNonCorePackages:
@@ -709,6 +740,7 @@ def run_ccdl(products, cdn, sapCodes, allowedPlatforms):
 
                     with open(app_json_path, "w", encoding="utf-8") as f:
                         json.dump(data, f, indent=4, ensure_ascii=False)
+                        app_json = data
                         print('[{}_{}] Non-Core packages removed'.format(s, v))
 
         if args.skipModuleC4D:
@@ -720,6 +752,7 @@ def run_ccdl(products, cdn, sapCodes, allowedPlatforms):
 
                     with open(app_json_path, "w", encoding="utf-8") as f:
                         json.dump(data, f, indent=4, ensure_ascii=False)
+                        app_json = data
                         print('[{}_{}] Maxon Cinema 4D packages removed'.format(s, v))
 
         if args.skipModulesSpeechToText:
@@ -731,9 +764,21 @@ def run_ccdl(products, cdn, sapCodes, allowedPlatforms):
 
                     with open(app_json_path, "w", encoding="utf-8") as f:
                         json.dump(data, f, indent=4, ensure_ascii=False)
+                        app_json = data
                         print('[{}_{}] Speech to Text packages removed'.format(s, v))
 
+        if len(skipPlatform) > 0:
+            with open(app_json_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                if remove_packages_by_arch(data, skipPlatform):
+                    if not os.path.exists(backup_path):
+                        shutil.copy2(app_json_path, backup_path)
 
+                    with open(app_json_path, "w", encoding="utf-8") as f:
+                        json.dump(data, f, indent=4, ensure_ascii=False)
+                        app_json = data
+
+        p['application_json'] = app_json
         print('')
 
     print('Downloading...')
