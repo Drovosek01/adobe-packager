@@ -1,6 +1,27 @@
+# Adobe Packager
+
+- [Adobe Packager](#adobe-packager)
+  - [What is this and for what](#what-is-this-and-for-what)
+  - [How to use it](#how-to-use-it)
+  - [Donate](#donate)
+  - [Known issues](#known-issues)
+  - [Resolved issues](#resolved-issues)
+  - [To Do](#to-do)
+  - [Instructions](#instructions)
+    - [How to install an application with all languages or choose a specific application language if all language packs are downloaded](#how-to-install-an-application-with-all-languages-or-choose-a-specific-application-language-if-all-language-packs-are-downloaded)
+    - [How to install an application on an unsupported version of macOS](#how-to-install-an-application-on-an-unsupported-version-of-macos)
+  - [Used code](#used-code)
+
+
 ## What is this and for what
 
 This is a script that allows you to download portable installers of programs from Adobe for macOS with different versions and different or all languages. This can help system administrators who need to install the same program from Adobe on several computers, as well as those people who do not want to use the latest version of programs from Creative Cloud or install the application on an officially unsupported version of macOS (see [instructions](#instructions) partition here).
+
+> [!NOTE]
+> 
+> We not provide or discuss cracks or any alternative activations!
+> The purpose of the project is only to download and install Adobe products
+
 
 ## How to use it
 
@@ -8,13 +29,13 @@ This is a script that allows you to download portable installers of programs fro
 
    - [here](https://helpx.adobe.com/download-install/kb/creative-cloud-desktop-app-download.html) for "offline" installer of Creative Cloud under "macOS | Alternative downloads"
 
-2. For the script to work, Python 3 and XCode (or XCode components) must be installed
+2. For the script to work, Python 3 must be installed
 
-   - just run this command `xcode-select --install` in terminal to install it
+   - just download and install [Python from official site](https://www.python.org/downloads/)
 
 3. Clone the repository `git clone https://github.com/Drovosek01/adobe-packager` or download files via your browser (and of course unpack archive with files)
 
-4. In the Finder double click on the `ccdl.command` file and follow the prompts in the terminal. You can also run the installer in the terminal to have it install into `/Applications/Adobe\ Packager.command`. Note that it needs the folder from github to remain on your system when you installed it.
+4. In the Finder double click on the `ccdl.command` file and follow the prompts in the terminal.
 
    - You also can type `python3` in terminal and type path to `ccdl.py` file or just drop it to terminal window and press Enter. You can add attributes for launch `ccdl.py` file for specific work.
 
@@ -33,6 +54,8 @@ Yes, I am not the original creator of this script and so far I have only formatt
 ## Known issues
 
 - Postfix `macarm64` can mean `macuniversal` architecture
+- Need old or patched/modified `Setup` in `/Library/Application Support/Adobe/Adobe Desktop Common/HDBox` for installing modern versions products
+  - because Adobe changed some processes started with Creative Cloud 5.10.0.573 - [info by adobe](https://helpx.adobe.com/enterprise/kb/issue-installing-package-created-before-feb-2023.html)
 
 ## Resolved issues
 
@@ -40,13 +63,22 @@ Yes, I am not the original creator of this script and so far I have only formatt
 
 ## To Do
 
-- [x] Find a way to download Adobe Acrobat
-- [x] Fix the script for downloading applications via xml v5
-- [x] Find the difference between xml v5 and v4
 - [ ] Refactoring the script - split it into different files
 - [ ] Make the script fully or partially cross-platform
 - [ ] Make interactive examples of requests for downloading an xml file in the browser
+- [ ] Add config system for downloader pre-configure all parameters and required apps and just pass it to downloader
+- [ ] Research HTTP-calls in CCMaker and improve current script with it
+  - https://pastee.dev/p/s3NdP
+  - https://forum.ru-board.com/topic.cgi?forum=35&topic=82415&start=760#21
+- [ ] Add function for download product icons
+- [ ] Add function for stop/pause and continue download from paused state (without full re-downloading files)
+- [ ] Add GUI on Tkinter or other Python GUI cross platform projects for downloader
 - [ ] Make it possible to select the language of the program in installer GUI
+- [ ] Add function for check/validate downloaded package
+  - application.json files contain size and hash for all files
+- [x] Find a way to download Adobe Acrobat
+- [x] Fix the script for downloading applications via xml v5
+- [x] Find the difference between xml v5 and v4
 - [x] Make it possible to download all the language packs
 - [x] Find a way to download Photoshop native for ARM
 

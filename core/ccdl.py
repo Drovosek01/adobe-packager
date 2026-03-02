@@ -199,6 +199,7 @@ def parse_products_xml(products_xml, urlVersion, allowedPlatforms):
             continue
 
         sap = p.get('id')
+        # TODO: add function download products not only from 'ccm' channel
         hidden = parent_map[parent_map[p]].get('name') != 'ccm'
         displayName = p.find('displayName').text
         productVersion = p.get('version')
@@ -504,6 +505,9 @@ def remove_non_core_packages(data: dict) -> bool:
             packages_container["Package"] = []
             isNonCoresRemoved = True
 
+    # TODO: be better not just truncate Modules array but
+    # check ReferencePackages for all items and remove it and modules
+    # if it same with removed Package name
     if "Modules" in data and "Module" in data.get("Modules", {}):
         data["Modules"]["Module"] = []
 
