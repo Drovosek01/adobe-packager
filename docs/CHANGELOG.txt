@@ -2,6 +2,13 @@ This is the Adobe Offline Package downloader.
 
 CHANGELOG
 
+(0.3.1)
++ Added argument '--onlyWithSupportOS' for show only products supported on the specified macOS version
++ Added argument '--useSavedXML' for use previously downloaded products.xml
++ Added support for entering any numbers in the UrlVersion step
++ Changed folders structure
++ Added prevent continue when 0 products found
+
 (0.3.0)
 + Added argument '--skipDependencyACR' and prompt for prevent downloading CameraRaw and remove this dependency from application.json and driver.xml
 + Added argument '--skipNonCorePackages' for skip downloading packages whose type is specified as non-core in application.json files and remove it from the file

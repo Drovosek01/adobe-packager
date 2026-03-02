@@ -30,8 +30,7 @@ except ImportError:
 
 session = requests.sessions.Session()
 
-VERSION = 4
-VERSION_STR = '0.3.0'
+VERSION_STR = '0.3.1'
 
 # path to dir where current file
 script_dir = os.path.dirname(os.path.realpath(__file__))
@@ -1030,7 +1029,7 @@ if __name__ == '__main__':
     parser.add_argument('--notWrapInApp',
                         help="Just download adobe product to folder and not warp it into application", action='store_true')
     parser.add_argument('--onlyWithSupportOS',
-                        help="Show only applications supported on the specified macOS version. \
+                        help="Show only products supported on the specified macOS version. \
                             If you pass just an argument without parameters, the current macOS version on which the script is running will be selected.",
                         nargs='?', const=macos_version_current,)
     args = parser.parse_args()
