@@ -425,7 +425,12 @@ def get_products():
                     lastv = v['productVersion']
             if lastv:
                 sapCodes[p['sapCode']] = p['displayName']
-    print(str(len(sapCodes)) + ' products found:')
+    
+    products_amount = len(sapCodes)
+    print(str(products_amount) + ' products found:')
+
+    if products_amount == 0:
+        exit(0)
 
     if args.sapCode and products.get(args.sapCode.upper()) is None:
         print('\nProvided SAP Code not found in products: ' + args.sapCode)
