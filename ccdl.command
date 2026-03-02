@@ -41,5 +41,5 @@ python3 -c "import tqdm" || pip3 install --user tqdm
 # clear
 
 echo "${CYAN}starting ccdl${RESET}"
-cd "$(dirname "$0")"
+cd "$(dirname "$0")/core"
 python3 "./ccdl.py" "$@"
