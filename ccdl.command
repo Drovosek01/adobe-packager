@@ -3,21 +3,20 @@
 CYAN="$(tput bold; tput setaf 6)"
 RESET="$(tput sgr0)"
 
-# clear
-
 if command -v python3 > /dev/null 2>&1; then
 	if [ $(python3 -c "print('ye')") == "ye" ]; then
-		# clear
 		echo "${CYAN}python3 found!${RESET}"
 	else
-		# clear
 		echo "python3 found but non-functional" # probably xcode-select stub on Catalina+
-		echo "${CYAN}If you received a popup asking to install some tools, please accept.${RESET}"
-		read -n1 -r -p "Press [SPACE] when installation is complete, or any other key to abort." key
-		echo ""
-		if [ "$key" != '' ]; then
-			exit 1
-		fi
+		echo "You need download and install Python 3"
+		open "https://www.python.org/downloads/"
+		exit 0
+		# echo "${CYAN}If you received a popup asking to install some tools, please accept.${RESET}"
+		# read -n1 -r -p "Press [SPACE] when installation is complete, or any other key to abort." key
+		# echo ""
+		# if [ "$key" != '' ]; then
+		# 	exit 1
+		# fi
 	fi
 else
 	echo "You need download and install Python 3"
@@ -38,7 +37,6 @@ else
 	python3 -m pip install requests==2.28.2 --user
 fi
 python3 -c "import tqdm" || pip3 install --user tqdm 
-# clear
 
 echo "${CYAN}starting ccdl${RESET}"
 cd "$(dirname "$0")/core"
