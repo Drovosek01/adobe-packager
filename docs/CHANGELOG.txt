@@ -2,6 +2,14 @@ This is the Adobe Offline Package downloader.
 
 CHANGELOG
 
+(0.3.2)
++ Argument '--skipNonCorePackages' changed to '--skipNonCorePackagesAll'
++ Added argument '--skipNonCorePackages' for skip downloading packages whose type is specified as non-core in all application.json file only for the target Adobe product
++ Added more information about the types of downloaded components
++ Improved detection installed python3 to prevent the appearance of a window requesting the installation of Xcode CLT
++ Fixed bug when non-core packages were downloaded 2 times
++ Fixed bug when CameraRaw downloading even if the response in the prompt was no
+
 (0.3.1)
 + Added argument '--onlyWithSupportOS' for show only products supported on the specified macOS version
 + Added argument '--useSavedXML' for use previously downloaded products.xml
