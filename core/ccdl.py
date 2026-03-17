@@ -811,6 +811,11 @@ def run_ccdl(products, cdn, sapCodes, allowedPlatforms):
         app_json_path = os.path.join(product_dir, 'application.json')
         backup_path = app_json_path + ".original"
 
+        if p['isDependency']:
+            print('package-component is target dependency')
+        else:
+            print('package-component is target product')
+
         print('[{}_{}] Downloading application.json'.format(s, v))
         app_json = get_application_json(p['buildGuid'])
 
@@ -895,14 +900,19 @@ def run_ccdl(products, cdn, sapCodes, allowedPlatforms):
         p['application_json'] = app_json
         print('')
 
-    print('Downloading...')
+    print('Downloading...\n')
 
     for p in prods_to_download:
         s, v = p['sapCode'], p['version']
         app_json = p['application_json']
         product_dir = os.path.join(products_dir, s)
 
-        print('\n[{}_{}] Parsing available packages'.format(s, v))
+        if p['isDependency']:
+            print('package-component is target dependency')
+        else:
+            print('package-component is target product')
+
+        print('[{}_{}] Parsing available packages'.format(s, v))
         core_pkg_count = 0
         noncore_pkg_count = 0
         typeless_pkg_count = 0
@@ -943,6 +953,8 @@ def run_ccdl(products, cdn, sapCodes, allowedPlatforms):
 
         for url in download_urls:
             download_file(url, product_dir, s, v)
+        
+        print('')
 
     print('\nGenerating driver.xml')
 
