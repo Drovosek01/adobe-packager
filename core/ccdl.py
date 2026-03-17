@@ -250,7 +250,7 @@ def questiony(question: str) -> bool:
     reply = None
     while reply not in ("", "y", "n"):
         reply = input(f"{question} (Y/n): ").lower()
-    return (reply in ("", "y"))
+    return (reply in ("", "y", "yes"))
 
 
 def questionn(question: str) -> bool:
@@ -258,7 +258,7 @@ def questionn(question: str) -> bool:
     reply = None
     while reply not in ("", "y", "n"):
         reply = input(f"{question} (y/N): ").lower()
-    return (reply in ("y", "Y"))
+    return (reply in ("", "n", "no"))
 
 
 def get_application_json(buildGuid):
@@ -745,8 +745,8 @@ def run_ccdl(products, cdn, sapCodes, allowedPlatforms):
             if args.skipDependencyACR:
                 continue
             else:
-                needDownloadACR = questionn('Do you want include CameraRaw in this package')
-                if needDownloadACR:
+                needDownloadACR = questiony('Do you want include CameraRaw in this package')
+                if not needDownloadACR:
                     continue
 
         for p in products[d['sapCode']]['versions']:
