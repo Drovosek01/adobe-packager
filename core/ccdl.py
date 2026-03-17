@@ -916,13 +916,6 @@ def run_ccdl(products, cdn, sapCodes, allowedPlatforms):
             else:
                 if (args.skipNonCorePackages and not p['isDependency']) or args.skipNonCorePackagesAll:
                     continue
-
-                if pkg.get('Type') and pkg['Type'] == 'non-core':
-                    noncore_pkg_count += 1
-                    download_urls.append(cdn + pkg['Path'])
-                if pkg.get('Type') is None:
-                    typeless_pkg_count += 1
-                    download_urls.append(cdn + pkg['Path'])
                 # TODO: actually parse `Condition` and check it properly (and maybe look for & add support for conditions other than installLanguage)
                 language_is_suitable = (
                         installLanguage == "ALL"
@@ -932,8 +925,16 @@ def run_ccdl(products, cdn, sapCodes, allowedPlatforms):
                         or '[installLanguage]==' + oslang in pkg['Condition']
                 )
 
-                if language_is_suitable:
-                    download_urls.append(cdn + pkg['Path'])
+                if pkg.get('Type') and pkg['Type'] == 'non-core':
+                    noncore_pkg_count += 1
+                    if language_is_suitable:
+                        download_urls.append(cdn + pkg['Path'])
+
+                if pkg.get('Type') is None:
+                    typeless_pkg_count += 1
+                    if language_is_suitable:
+                        download_urls.append(cdn + pkg['Path'])
+
 
         if (args.skipNonCorePackages and not p['isDependency']) or args.skipNonCorePackagesAll:
             print('[{}_{}] Selected {} core packages'.format(s, v, core_pkg_count))
