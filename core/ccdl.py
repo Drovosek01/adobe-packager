@@ -760,10 +760,10 @@ def run_ccdl(products, cdn, sapCodes, allowedPlatforms):
         if not buildGuid:
             buildGuid = firstGuid
         prods_to_download.append({'sapCode': d['sapCode'], 'version': d['version'],
-                                  'buildGuid': buildGuid})
+                                  'buildGuid': buildGuid, "isDependency": True})
 
     prods_to_download.insert(
-        0, {'sapCode': prodInfo['sapCode'], 'version': prodInfo['productVersion'], 'buildGuid': prodInfo['buildGuid']})
+        0, {'sapCode': prodInfo['sapCode'], 'version': prodInfo['productVersion'], 'buildGuid': prodInfo['buildGuid'], "isDependency": False})
     apPlatform = prodInfo['apPlatform']
 
     if args.notWrapInApp:
@@ -833,7 +833,7 @@ def run_ccdl(products, cdn, sapCodes, allowedPlatforms):
                         app_json = data
                         print('[{}_{}] ACR dependency removed'.format(s, v))
 
-        if args.skipNonCorePackages:
+        if (args.skipNonCorePackages and not p['isDependency']) or args.skipNonCorePackagesAll:
             with open(app_json_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
                 if remove_non_core_packages(data):
@@ -914,7 +914,7 @@ def run_ccdl(products, cdn, sapCodes, allowedPlatforms):
                 core_pkg_count += 1
                 download_urls.append(cdn + pkg['Path'])
             else:
-                if args.skipNonCorePackages:
+                if (args.skipNonCorePackages and not p['isDependency']) or args.skipNonCorePackagesAll:
                     continue
 
                 if pkg.get('Type') and pkg['Type'] == 'non-core':
@@ -935,7 +935,7 @@ def run_ccdl(products, cdn, sapCodes, allowedPlatforms):
                 if language_is_suitable:
                     download_urls.append(cdn + pkg['Path'])
 
-        if args.skipNonCorePackages:
+        if (args.skipNonCorePackages and not p['isDependency']) or args.skipNonCorePackagesAll:
             print('[{}_{}] Selected {} core packages'.format(s, v, core_pkg_count))
         else:
             print('[{}_{}] Selected {} core packages and {} non-core packages and {} packages without type'.format(s, v, core_pkg_count, noncore_pkg_count, typeless_pkg_count))
@@ -1019,7 +1019,9 @@ if __name__ == '__main__':
     parser.add_argument('--skipDependencyACR',
                         help="Skip downloading CameraRaw for package", action='store_true')
     parser.add_argument('--skipNonCorePackages',
-                        help="Skip downloading packages whose type is specified as non-core in application.json files.", action='store_true')
+                        help="Skip downloading packages whose type is specified as non-core in all application.json file only for the target Adobe product.", action='store_true')
+    parser.add_argument('--skipNonCorePackagesAll',
+                        help="Skip downloading packages whose type is specified as non-core in all application.json files. This is dangerous because in some dependency components, all packages may not have any package type marking and therefore will be considered as non-core and will be removed from the application.the json file. For example in: COCM, COMP, COPS, CORE, CORG. And when you try to install a program downloaded by Adobe with such dependencies without packages, error 107 will appear during installation.", action='store_true')
     parser.add_argument('--skipModuleC4D',
                         help="Skip downloading Cinema 4D packages whose type is specified as non-core in application.json files usually for After Effects only", action='store_true')
     parser.add_argument('--skipModulesSpeechToText',
