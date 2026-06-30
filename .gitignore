@@ -33,3 +33,5 @@ Temporary Items
 # End of https://www.toptal.com/developers/gitignore/api/macos
 
 products*xml
+products*json
+*.pkg
