@@ -10,6 +10,7 @@ import shutil
 import string
 import re
 import sys
+import subprocess
 from collections import OrderedDict
 from subprocess import PIPE, Popen
 from xml.etree import ElementTree as ET
@@ -148,9 +149,36 @@ def get_products_xml(url):
     else:
         print('\nDownloading products.xml\n')
         print(f"Source URL is: {url}")
+        
         response = session.get(url, headers=ADOBE_REQ_HEADERS, stream=True)
-        response.encoding = 'utf-8'
-        xml_text = response.text
+        response.raise_for_status()
+        
+        # Checking the file size from the server
+        total_size = int(response.headers.get('content-length', 0))
+        
+        # HACK: If the server has hidden the size, we set an approximate guideline (35 MB),
+        # to force tqdm to turn on the visual progress bar mode
+        if total_size == 0:
+            print('\nThe server did not return the file size, so we set the potential size to 35 MB.')
+            total_size = 35 * 1024 * 1024  # 35 MB in bytes
+            
+        chunks = []
+        from tqdm import tqdm
+        
+        # Adding bar_format for beautiful and clean output
+        with tqdm(total=total_size, 
+                  unit='B', 
+                  unit_scale=True, 
+                  desc="Downloading",
+                  bar_format='{desc}: {percentage:3.0f}%|{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}]') as pbar:
+                  
+            for chunk in response.iter_content(chunk_size=16384): # increased the chunk for speed
+                if chunk:
+                    chunks.append(chunk)
+                    pbar.update(len(chunk))
+                    
+        xml_bytes = b"".join(chunks)
+        xml_text = xml_bytes.decode('utf-8')
 
     if args.saveXML and not args.useSavedXML:
         save_path = f"products.xml" if args.saveXML == True else args.saveXML
@@ -376,7 +404,7 @@ def get_products():
             selectedVersion = cleaned_val
 
     while not selectedVersion:
-        val = input('\nPlease enter the URL version (usually v4/v5/v6) for downloading products.xml, or nothing for v6: ') or '6'
+        val = input('\nEnter the URL version (usually v4/v5/v6) for downloading products.xml, or nothing for v6: ') or '6'
         cleaned_val = re.sub(r"[^\d]", "", val)
         if len(cleaned_val) == 0:
             print('Invalid URL version: {}'.format(val))
@@ -657,7 +685,7 @@ def run_ccdl(products, cdn, sapCodes, allowedPlatforms):
 
         while sapCode is None:
             val = input(
-                '\nPlease enter the SAP Code of the desired product (eg. PHSP for Photoshop): ').upper() or 'PHSP'
+                '\nEnter the SAP Code of the desired product (eg. PHSP for Photoshop): ').upper() or 'PHSP'
             if products.get(val):
                 sapCode = val
             else:
@@ -685,7 +713,7 @@ def run_ccdl(products, cdn, sapCodes, allowedPlatforms):
                 lastv = v['productVersion']
 
         while version is None:
-            val = input('\nPlease enter the desired version. Nothing for ' + lastv + ': ') or lastv
+            val = input('\nEnter the desired version. Nothing for ' + lastv + ': ') or lastv
             if versions.get(val):
                 version = val
             else:
@@ -727,7 +755,7 @@ def run_ccdl(products, cdn, sapCodes, allowedPlatforms):
         print('Available languages: {}'.format(', '.join(langs)))
         while installLanguage is None:
             val = input(
-                f'\nPlease enter the desired install language, or nothing for [{deflang}]: ') or deflang
+                f'\nEnter the desired install language, or nothing for [{deflang}]: ') or deflang
             if len(val) == 5:
                 val = val[0:2].lower() + val[2] + val[3:5].upper()
             elif len(val) == 3:
@@ -742,7 +770,7 @@ def run_ccdl(products, cdn, sapCodes, allowedPlatforms):
             while oslang not in langs:
                 print('Could not detect your default Language for MacOS.')
                 oslang = input(
-                    f'\nPlease enter the your OS Language, or nothing for [{installLanguage}]: ') or installLanguage
+                    f'\nEnter the your OS Language, or nothing for [{installLanguage}]: ') or installLanguage
                 if oslang not in langs:
                     print(
                         '{} is not available. Please use a value from the list above.'.format(oslang))
