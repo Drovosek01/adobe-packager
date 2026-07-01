@@ -20,13 +20,29 @@ try:
     from tqdm.auto import tqdm
 except ImportError:
     print("Trying to Install required module: tqdm\n")
-    os.system('pip3 install --user tqdm')
+    # os.system('pip3 install --user tqdm')
+    # subprocess.run('pip3 install --user tqdm', shell=True)
+    subprocess.run([sys.executable, "-m", "pip", "install", "--user", "tqdm"])
     try:
         from tqdm.auto import tqdm
     except ImportError:
         sys.exit("""You need tqdm!
                 install it from http://pypi.python.org/pypi/tqdm
                 or run: pip3 install tqdm.""")
+
+import signal
+
+
+# ===== ===== =====
+# START CODE
+# ===== ===== =====
+
+def signal_handler(sig, frame):
+    print('\n\n[!] Operation cancelled. Exiting...')
+    sys.exit(0)
+
+# We register a handler for the SIGINT signal (which sends Ctrl+C)
+signal.signal(signal.SIGINT, signal_handler)
 
 session = requests.sessions.Session()
 
