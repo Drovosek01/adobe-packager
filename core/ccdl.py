@@ -315,8 +315,11 @@ def get_application_json(buildGuid):
 def get_download_path():
     """Ask for desired download folder"""
     if (args.destination):
-        print('\nUsing provided destination: ' + args.destination)
-        dest = args.destination
+        # Expand the '~' symbol into the full path to the home folder
+        expanded_path = os.path.expanduser(args.destination)
+        # Convert it to an absolute path (in case a relative path was provided, e.g., './downloads')
+        dest = os.path.abspath(expanded_path)
+        print('\nUsing provided destination: ' + dest)
     else:
         print('\nPlease navigate to the desired downloads folder, or cancel to abort.')
         p = Popen(['/usr/bin/osascript', '-e',
@@ -1052,7 +1055,7 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--destination',
                         help='Directory to download installation files to', action='store')
     parser.add_argument('-a', '--arch',
-                        help='Set the architecture to download', action='store')
+                        help='Set the architecture to download (eg. x64 or arm64) or just write native', action='store')
     parser.add_argument('-u', '--urlVersion',
                         help="Get app info from v4/v5/v6 url (eg. v6)", action='store')
     parser.add_argument('-A', '--Auth',
