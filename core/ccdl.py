@@ -674,7 +674,7 @@ def remove_packages_by_modules_refs(data: dict, substr: str) -> bool:
 
 def run_ccdl(products, cdn, sapCodes, allowedPlatforms):
     """Run Main execution."""
-    sapCode = args.sapCode
+    sapCode = args.sapCode.upper() if args.sapCode else None
     skipPlatform = ''
 
     if ('macarm64' in allowedPlatforms) and ('osx10-64' not in allowedPlatforms):
@@ -698,14 +698,16 @@ def run_ccdl(products, cdn, sapCodes, allowedPlatforms):
     product = products.get(sapCode)
     versions = product['versions']
     version = None
+
     if (args.version):
-        if versions.get(args.version):
+        if (args.version) == 'latest' or (args.version) == 'newest' or (args.version) == 'last':
+            version = list(versions.keys())[0]
+            print('\nUsing provided version latest: ' + version)
+        elif versions.get(args.version):
             print('\nUsing provided version: ' + args.version)
             version = args.version
         else:
             print('\nProvided version not found: ' + args.version)
-
-    print('')
 
     if not version:
         lastv = None
@@ -721,7 +723,6 @@ def run_ccdl(products, cdn, sapCodes, allowedPlatforms):
                 version = val
             else:
                 print('{} is not a valid version. Please use a value from the list above.'.format(val))
-    print('')
 
     if sapCode == 'APRO':
         download_APRO(versions[version], cdn)
@@ -1051,11 +1052,11 @@ if __name__ == '__main__':
     parser.add_argument('-s', '--sapCode',
                         help='SAP code for desired product (eg. PHSP)', action='store')
     parser.add_argument('-v', '--version',
-                        help='Version of desired product (eg. 21.0.3)', action='store')
+                        help='Version of desired product (eg. 21.0.3) or just write word "last"', action='store')
     parser.add_argument('-d', '--destination',
                         help='Directory to download installation files to', action='store')
     parser.add_argument('-a', '--arch',
-                        help='Set the architecture to download (eg. x64 or arm64) or just write native', action='store')
+                        help='Set the architecture to download (eg. x64 or arm64) or just write word "native"', action='store')
     parser.add_argument('-u', '--urlVersion',
                         help="Get app info from v4/v5/v6 url (eg. v6)", action='store')
     parser.add_argument('-A', '--Auth',
