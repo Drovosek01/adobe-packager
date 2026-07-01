@@ -6,6 +6,45 @@ PYTHON_PATH="$(command -v python3)"
 PYTHON_DOWNLOAD_WEBPAGE="https://www.python.org/downloads/"
 PYTHON_INSTALLER_PATH="/tmp/python_installer.pkg"
 
+IS_PIPED=false
+# Check whether the code is running via pipe, stdin or bash -c
+if [ -p /dev/stdin ] || [ ! -t 0 ] || [[ "$0" == *"bash"* ]]; then
+    IS_PIPED=true
+fi
+
+if [ "$IS_PIPED" = true ]; then
+    echo "${CYAN}Script is running directly from code string/url (piped/evaluated)${RESET}"
+    # If run from the network, the working directory for ccdl will be a temporary folder
+    BASE_DIR="/tmp/ccdl_tmp"
+    CORE_DIR="${BASE_DIR}/core"
+    SCRIPT_LAUNCH_METHOD="piped"
+else
+    # If run as a file, we take the native folder of this file
+    BASE_DIR="$(cd "$(dirname "$0")" && pwd)"
+    CORE_DIR="${BASE_DIR}/core"
+    SCRIPT_LAUNCH_METHOD="file"
+fi
+
+PY_TARGET_FILE="${CORE_DIR}/ccdl.py"
+
+# Function for downloading ccdl.py if it doesn't exist
+ensure_ccdl_py_exists() {
+    if [ ! -f "$PY_TARGET_FILE" ]; then
+        echo "${CYAN}ccdl.py not found locally. Preparing download...${RESET}"
+        
+        # Create folder structure if it doesn't exist (especially important for /tmp)
+        mkdir -p "$CORE_DIR"
+        
+        local download_url="https://github.com/Drovosek01/adobe-packager/raw/refs/heads/develop/core/ccdl.py"
+        echo "Downloading ccdl.py into ${CORE_DIR}..."
+        
+        if ! curl -L -# -o "$PY_TARGET_FILE" "$download_url"; then
+            echo "Error: Failed to download ccdl.py from GitHub."
+            exit 1
+        fi
+    fi
+}
+
 need_manually_download_python() {
     echo "Open download page manually and download and install Python 3 manually."
     echo "$PYTHON_DOWNLOAD_WEBPAGE"
@@ -22,6 +61,8 @@ install_pkg_with_gui_privileges() {
     fi
 
     echo "${CYAN}Requesting administrator privileges via macOS prompt...${RESET}"
+
+    # TODO: maybe need create installer choicechanges to customize the install https://docs.python.org/3/using/mac.html#installing-using-the-command-line
     
     # Forming a command to execute via osascript with administrator rights
     local osascript_cmd="do shell script \"sudo installer -pkg '${pkg_path}' -target /\" with administrator privileges"
@@ -134,6 +175,7 @@ fi
 
 PYTHON_EXEC="${PYTHON_PATH:-python3}"
 
+# --- DEPENDENCY CHECKING ---
 $PYTHON_EXEC -c 'import requests' > /dev/null 2>&1
 if [[ $? == 0 && $($PYTHON_EXEC -c 'import requests;print(requests.__version__)') == "2.28.2" ]]; then
     echo "${CYAN}requests 2.28.2 found!${RESET}"
@@ -143,6 +185,9 @@ else
 fi
 $PYTHON_EXEC -c "import tqdm" || pip3 install --user tqdm 
 
-echo "${CYAN}starting ccdl${RESET}"
-cd "$(dirname "$0")/core"
+# --- CHECKING THE AVAILABILITY AND LAUNCHING OF THE CCDL STRUCTURE ---
+ensure_ccdl_py_exists
+
+echo "${CYAN}starting ccdl (${SCRIPT_LAUNCH_METHOD} mode)...${RESET}"
+cd "$CORE_DIR" || exit 1
 $PYTHON_EXEC "./ccdl.py" "$@"
