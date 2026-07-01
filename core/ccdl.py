@@ -418,36 +418,36 @@ def get_products():
     isAppleSiliconOnly = -1
     allowedPlatforms = ['macuniversal']
 
-    if args.nativeOnly:
-        if platform.machine() == 'arm64':
+    if args.arch:
+        archArgLower = args.arch.lower()
+        if archArgLower == 'native' or archArgLower == 'nativeonly':
+            if platform.machine() == 'arm64':
+                isAppleSiliconOnly = True
+                allowedPlatforms.append('macarm64')
+            else:
+                isAppleSiliconOnly = False
+                allowedPlatforms.append('osx10-64')
+                allowedPlatforms.append('osx10')
+        if archArgLower == 'x86_64' or archArgLower == 'x64' or archArgLower == 'intel':
+            isAppleSiliconOnly = False
+        elif archArgLower == 'arm64' or archArgLower == 'arm' or archArgLower == 'm1':
             isAppleSiliconOnly = True
-            allowedPlatforms.append('macarm64')
+        else:
+            print('Invalid argument "{}" for {}'.format(args.arch, 'architecture'))
+    
+    if isAppleSiliconOnly == -1:
+        if platform.machine() == 'arm64':
+            isAppleSiliconOnly = questiony('Do you want to make Apple Silicon native packages')
         else:
             isAppleSiliconOnly = False
-            allowedPlatforms.append('osx10-64')
-            allowedPlatforms.append('osx10')
+    
+    if isAppleSiliconOnly:
+        allowedPlatforms.append('macarm64')
+        print('Note: If the Adobe program is NOT listed here, there is no native Apple Silicon version.')
+        print('      Use the non native version with Rosetta 2 until an Apple Silicon version is available.')
     else:
-        if args.arch:
-            if args.arch.lower() == 'x86_64' or args.arch.lower() == 'x64' or args.arch.lower() == 'intel':
-                isAppleSiliconOnly = False
-            elif args.arch.lower() == 'arm64' or args.arch.lower() == 'arm' or args.arch.lower() == 'm1':
-                isAppleSiliconOnly = True
-            else:
-                print('Invalid argument "{}" for {}'.format(args.arch, 'architecture'))
-        
-        if isAppleSiliconOnly == -1:
-            if platform.machine() == 'arm64':
-                isAppleSiliconOnly = questiony('Do you want to make Apple Silicon native packages')
-            else:
-                isAppleSiliconOnly = False
-        
-        if isAppleSiliconOnly:
-            allowedPlatforms.append('macarm64')
-            print('Note: If the Adobe program is NOT listed here, there is no native Apple Silicon version.')
-            print('      Use the non native version with Rosetta 2 until an Apple Silicon version is available.')
-        else:
-            allowedPlatforms.append('osx10-64')
-            allowedPlatforms.append('osx10')
+        allowedPlatforms.append('osx10-64')
+        allowedPlatforms.append('osx10')
 
     productsPlatform = 'osx10-64,osx10,macarm64,macuniversal'
     adobeurl = ADOBE_PRODUCTS_XML_URL.format(urlVersion=selectedVersion, installPlatform=productsPlatform)
@@ -1063,8 +1063,6 @@ if __name__ == '__main__':
                         help="Don't prompt for additional downloads", action='store_true')
     parser.add_argument('--skipExisting',
                         help="Skip existing files, e.g. resuming failed downloads", action='store_true')
-    parser.add_argument('--nativeOnly',
-                        help="Show and download only those applications that are native to this platform", action='store_true')
     parser.add_argument("--saveXML",
                         help="The path to save the uploaded file products.xml following the transmitted path.\
                               If the argument is passed without specifying the path, the xml file will be saved in the script folder.",
