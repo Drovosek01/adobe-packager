@@ -1037,7 +1037,13 @@ def run_ccdl(products, cdn, sapCodes, allowedPlatforms):
         f.write(driver)
         f.close()
 
-    print('\nPackage successfully created. Run {} to install.'.format(result_path))
+    print('\nPackage successfully created.')
+
+    if args.notWrapInApp:
+        print('Use driver.xml to install.')
+    else:
+        print('Run {} to install.'.format(result_path))
+
     return
 
 
