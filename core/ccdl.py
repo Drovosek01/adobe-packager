@@ -431,7 +431,7 @@ def get_products():
                 isAppleSiliconOnly = False
                 allowedPlatforms.append('osx10-64')
                 allowedPlatforms.append('osx10')
-        if archArgLower == 'x86_64' or archArgLower == 'x64' or archArgLower == 'intel':
+        elif archArgLower == 'x86_64' or archArgLower == 'x64' or archArgLower == 'intel':
             isAppleSiliconOnly = False
         elif archArgLower == 'arm64' or archArgLower == 'arm' or archArgLower == 'm1':
             isAppleSiliconOnly = True
