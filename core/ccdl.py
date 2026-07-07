@@ -149,9 +149,17 @@ def get_products_xml(url):
     else:
         print('\nDownloading products.xml\n')
         print(f"Source URL is: {url}")
-        
-        response = session.get(url, headers=ADOBE_REQ_HEADERS, stream=True)
-        response.raise_for_status()
+
+        # wrap the request in the try-except block to protect against network failures.
+        try:
+            # timeout=(15, 100) means: 15 seconds to connect to the server, 100 seconds to wait for data
+            response = session.get(url, headers=ADOBE_REQ_HEADERS, stream=True, timeout=(15, 100))
+            response.raise_for_status()
+        except requests.exceptions.RequestException as e:
+            print(f"\n[!] NETWORK ERROR: Failed to download products.xml")
+            print(f"Details: {e}")
+            print("Check your internet connection, VPN, or try running the script again later.")
+            exit(1)
         
         # Checking the file size from the server
         total_size = int(response.headers.get('content-length', 0))
@@ -166,16 +174,21 @@ def get_products_xml(url):
         from tqdm import tqdm
         
         # Adding bar_format for beautiful and clean output
-        with tqdm(total=total_size, 
-                  unit='B', 
-                  unit_scale=True, 
-                  desc="Downloading",
-                  bar_format='{desc}: {percentage:3.0f}%|{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}]') as pbar:
-                  
-            for chunk in response.iter_content(chunk_size=16384): # increased the chunk for speed
-                if chunk:
-                    chunks.append(chunk)
-                    pbar.update(len(chunk))
+        try:
+            with tqdm(total=total_size, 
+                      unit='B', 
+                      unit_scale=True, 
+                      desc="Downloading",
+                      bar_format='{desc}: {percentage:3.0f}%|{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}]') as pbar:
+                      
+                for chunk in response.iter_content(chunk_size=16384):
+                    if chunk:
+                        chunks.append(chunk)
+                        pbar.update(len(chunk))
+        except (requests.exceptions.RequestException, ConnectionResetError) as e:
+            print(f"\n[!] NETWORK ERROR: Connection broke during download.")
+            print(f"Details: {e}")
+            exit(1)
                     
         xml_bytes = b"".join(chunks)
         xml_text = xml_bytes.decode('utf-8')
