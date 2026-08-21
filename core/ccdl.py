@@ -712,13 +712,38 @@ def run_ccdl(products, cdn, sapCodes, allowedPlatforms):
     versions = product['versions']
     version = None
 
+    # Check if the version argument is provided
     if (args.version):
-        if (args.version) == 'latest' or (args.version) == 'newest' or (args.version) == 'last':
+        # Use regex to match patterns like last25, last_25, latest25, latest_25, newest25, newest_25
+        # Group 1: Matches 'last', 'latest', or 'newest' (case-insensitive)
+        # Group 2: Matches one or more digits following an optional underscore
+        version_match = re.fullmatch(r'(last|latest|newest)_?(\d+)', args.version, re.IGNORECASE)
+        if version_match:
+            # Extract the major version number from the matched pattern (e.g., '25' from 'last25')
+            requested_major_version = version_match.group(1)
+            print('\nRequested latest version from {}.x.x'.format(requested_major_version))
+            for candidate_version in versions:
+                # Extract the major version from the candidate version (e.g., '25' from '25.1.0')
+                candidate_major_version = str(candidate_version).split('.', 1)[0]
+                if candidate_major_version == requested_major_version:
+                    version = candidate_version
+                    print('Found version: {}'.format(version))
+                    break
+            if not version:
+                print('Not found requested version\n')
+
+        # Handle explicit requests for the latest version
+        elif (args.version) == 'latest' or (args.version) == 'newest' or (args.version) == 'last':
+            # Use the first version in the list (assumed to be the latest)
             version = list(versions.keys())[0]
             print('\nUsing provided version latest: ' + version)
+
+        # Handle explicit version requests (e.g., '1.2.3')
         elif versions.get(args.version):
             print('\nUsing provided version: ' + args.version)
             version = args.version
+            
+        # Handle cases where the version is not found
         else:
             print('\nProvided version not found: ' + args.version)
 
