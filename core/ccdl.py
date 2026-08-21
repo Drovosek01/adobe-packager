@@ -622,11 +622,15 @@ def remove_check_compatibility(data: dict) -> bool:
     return True
 
 
-def remove_packages_by_modules_refs(data: dict, substr: str) -> bool:
+def remove_packages_by_modules_refs(
+    data: dict,
+    substr: str,
+    fieldName: str = "DisplayName"
+) -> bool:
     """
-    Removes modules with substring in the DisplayName,
+    Removes modules with substring in the specified field (default: DisplayName),
     as well as their associated packages.
-    Returns True if the 1 or more module found.
+    Returns True if 1 or more module found.
     """
 
     removed_packages = []
@@ -651,8 +655,8 @@ def remove_packages_by_modules_refs(data: dict, substr: str) -> bool:
     package_names_to_remove = set()
 
     for module in modules:
-        display_name = module.get("DisplayName", "")
-        if substr.lower() in display_name.lower():
+        field_value = module.get(fieldName, "")
+        if substr.lower() in field_value.lower():
             isModuleRemoved = True
             removed_modules.append(module.get("Id"))
 
@@ -676,7 +680,7 @@ def remove_packages_by_modules_refs(data: dict, substr: str) -> bool:
     # removing modules
     new_modules = [
         m for m in modules
-        if substr.lower() not in m.get("DisplayName", "").lower()
+        if substr.lower() not in m.get(fieldName, "").lower()
     ]
 
     modules_container["Module"] = new_modules
@@ -960,6 +964,30 @@ def run_ccdl(products, cdn, sapCodes, allowedPlatforms):
                         app_json = data
                         print('[{}_{}] Speech to Text packages removed'.format(s, v))
 
+        if args.skipModulesSuperCaf:
+            with open(app_json_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                if remove_packages_by_modules_refs(data, 'SuperCaf', 'Id'):
+                    if not os.path.exists(backup_path):
+                        shutil.copy2(app_json_path, backup_path)
+
+                    with open(app_json_path, "w", encoding="utf-8") as f:
+                        json.dump(data, f, indent=4, ensure_ascii=False)
+                        app_json = data
+                        print('[{}_{}] SuperCaf packages removed'.format(s, v))
+
+        if args.skipModulesUltraCaf:
+            with open(app_json_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                if remove_packages_by_modules_refs(data, 'UltraCaf', 'Id'):
+                    if not os.path.exists(backup_path):
+                        shutil.copy2(app_json_path, backup_path)
+
+                    with open(app_json_path, "w", encoding="utf-8") as f:
+                        json.dump(data, f, indent=4, ensure_ascii=False)
+                        app_json = data
+                        print('[{}_{}] UltraCaf packages removed'.format(s, v))        
+
         if args.removeCheckCompatibility:
             with open(app_json_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
@@ -1129,6 +1157,10 @@ if __name__ == '__main__':
                         help="Skip downloading Cinema 4D packages whose type is specified as non-core in application.json files usually for After Effects only", action='store_true')
     parser.add_argument('--skipModulesSpeechToText',
                         help="Skip downloading Speech to Text packages whose type is specified as non-core in application.json files usually for Premiere Pro only", action='store_true')
+    parser.add_argument('--skipModulesSuperCaf',
+                        help="Skip downloading SuperCafModels packages whose type is specified as non-core in application.json files usually for Photoshop only", action='store_true')
+    parser.add_argument('--skipModulesUltraCaf',
+                        help="Skip downloading UltraCafModels packages whose type is specified as non-core in application.json files usually for Photoshop only", action='store_true')
     parser.add_argument('--removeCheckCompatibility',
                         help="Remove point CheckCompatibility from SystemRequirement from application.json files", action='store_true')
     parser.add_argument('--notWrapInApp',
