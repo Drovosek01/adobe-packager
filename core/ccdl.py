@@ -16,22 +16,35 @@ from subprocess import PIPE, Popen
 from xml.etree import ElementTree as ET
 
 import requests
-
-try:
-    from tqdm.auto import tqdm
-except ImportError:
-    print("Trying to Install required module: tqdm\n")
-    # os.system('pip3 install --user tqdm')
-    # subprocess.run('pip3 install --user tqdm', shell=True)
-    subprocess.run([sys.executable, "-m", "pip", "install", "--user", "tqdm"])
-    try:
-        from tqdm.auto import tqdm
-    except ImportError:
-        sys.exit("""You need tqdm!
-                install it from http://pypi.python.org/pypi/tqdm
-                or run: pip3 install tqdm.""")
-
 import signal
+
+def ensure_import(import_name: str, package_name: str = None):
+    """
+    Checks for the presence of a module. If it is not installed,
+    attempts to install it via pip and import it again. 
+
+    :param import_name: The name used for importing (e.g., 'babel' or 'PIL')
+    :param package_name: The pip package name, if different from import_name (e.g., 'Pillow')
+    :return: The Python module
+    """
+    if package_name is None:
+        package_name = import_name
+
+    try:
+        return importlib.import_module(import_name)
+    except ImportError:
+        print(f"Module '{import_name}' not found. Trying to install: {package_name}...")
+        subprocess.run([sys.executable, "-m", "pip", "install", "--user", "--break-system-packages", package_name], check=True)
+        try:
+            return importlib.import_module(import_name)
+        except ImportError:
+            sys.exit(f"""Failed to import '{import_name}' even after installation!
+Install it manually:
+    pip install {package_name}
+Or check project status: https://pypi.org/project/{package_name}/""")
+
+babel = ensure_import("babel")
+tqdm = ensure_import("tqdm")
 
 
 # ===== ===== =====
