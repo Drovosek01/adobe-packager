@@ -11,6 +11,7 @@ import string
 import re
 import sys
 import subprocess
+import importlib
 from collections import OrderedDict
 from subprocess import PIPE, Popen
 from xml.etree import ElementTree as ET
@@ -44,6 +45,9 @@ Install it manually:
 Or check project status: https://pypi.org/project/{package_name}/""")
 
 babel = ensure_import("babel")
+from babel import Locale
+from babel.core import UnknownLocaleError
+
 tqdm = ensure_import("tqdm")
 
 
@@ -60,7 +64,7 @@ signal.signal(signal.SIGINT, signal_handler)
 
 session = requests.sessions.Session()
 
-VERSION_STR = '0.3.2'
+VERSION_STR = '0.3.3'
 
 # path to dir where current file
 script_dir = os.path.dirname(os.path.realpath(__file__))
@@ -286,6 +290,11 @@ def parse_products_xml(products_xml, urlVersion, allowedPlatforms):
             buildGuid = pf.find('languageSet').get('buildGuid')
             appplatform = pf.get('id')
             dependencies = list(pf.findall('languageSet/dependencies/dependency'))
+            applanguages = [
+                    loc.get('name') 
+                    for loc in pf.findall('languageSet/locales/locale') 
+                    if loc.get('name')
+                ]
             if productVersion in products[sap]['versions']:
                 if products[sap]['versions'][productVersion]['apPlatform'] in allowedPlatforms:
                     break # There's no single-arch binary if macuniversal is available
@@ -307,6 +316,7 @@ def parse_products_xml(products_xml, urlVersion, allowedPlatforms):
                 'baseVersion': baseVersion,
                 'productVersion': productVersion,
                 'apPlatform': appplatform,
+                'languages': applanguages,
                 'dependencies': [{
                     'sapCode': d.find('sapCode').text, 'version': d.find('baseVersion').text
                 } for d in dependencies],
@@ -702,6 +712,254 @@ def remove_packages_by_modules_refs(
     return isModuleRemoved
 
 
+def get_cleaned_os_locale():
+    # Default region mapping for languages when the user's region differs
+    DEFAULT_REGION_MAP = {
+        'en': 'US',
+        'es': 'ES',
+        'pt': 'BR',
+        'fr': 'FR',
+        'it': 'IT',
+        'de': 'DE',
+        'nl': 'NL',
+        'ru': 'RU',
+        'uk': 'UA',
+        'zh': 'CN',
+        'ja': 'JP',
+        'ko': 'KR',
+        'pl': 'PL',
+        'hu': 'HU',
+        'cs': 'CZ',
+        'tr': 'TR',
+        'sv': 'SE',
+        'nb': 'NO',
+        'fi': 'FI',
+        'da': 'DK',
+    }
+    try:
+        # 1. Get the primary interface language (e.g., "en-US", "ru-RU", or just "en")
+        lang_out = subprocess.check_output(
+            ["defaults", "read", "-g", "AppleLanguages"], text=True
+        )
+        # Parse output in format '(\n    "en-RU",\n    "ru-RU"\n)'
+        first_lang = lang_out.split('"')[1]  # E.g., got "en-RU" or "zh-Hans-CN"
+        
+        # Extract the base language code (first 2 letters)
+        main_lang = first_lang.split('-')[0].lower()
+
+        # 2. Get the system region
+        locale_out = subprocess.check_output(
+            ["defaults", "read", "-g", "AppleLocale"], text=True
+        ).strip()
+        
+        region = locale_out.split('_')[-1] if '_' in locale_out else 'US'
+
+        # 3. Construct the matching locale
+        # If the combination is known (e.g., en_US, en_GB, es_MX), keep it
+        # Otherwise fall back to the primary region for that language (en -> en_US instead of en_RU)
+        if main_lang == 'en' and region not in ['US', 'GB', 'IL', 'AE', 'CA', 'AU']:
+            return f"en_{DEFAULT_REGION_MAP.get(main_lang, 'US')}"
+        elif main_lang == 'fr' and region not in ['FR', 'CA', 'MA']:
+            return f"fr_{DEFAULT_REGION_MAP.get(main_lang, 'FR')}"
+        elif main_lang == 'es' and region not in ['ES', 'MX']:
+            return f"es_{DEFAULT_REGION_MAP.get(main_lang, 'ES')}"
+        
+        return f"{main_lang}_{DEFAULT_REGION_MAP.get(main_lang, region.upper())}"
+
+    except Exception:
+        return "en_US"
+
+
+def select_language(available_langs: list) -> str:
+    # Clearing the list from 'ALL'
+    base_langs = [code for code in available_langs if code != 'ALL']
+
+    os_locale = get_cleaned_os_locale()
+
+    if os_locale in base_langs:
+        # remove system code from the general list and put it first among ordinary languages
+        other_langs = [code for code in base_langs if code != os_locale]
+        ordered_langs = [os_locale] + other_langs
+    else:
+        ordered_langs = base_langs
+
+    # form the final list: 'ALL' is always in the 1st position
+    clean_langs = ['ALL'] + ordered_langs
+
+    lang_objects = []
+
+    for code in clean_langs:
+        if code == 'ALL':
+            lang_objects.append({
+                'code': 'ALL',
+                'name_en': 'All Languages',
+                'name_native': 'All Languages'
+            })
+            continue
+        if code == 'mul':
+            lang_objects.append({
+                'code': 'mul',
+                'name_en': 'Multilingual',
+                'name_native': 'Multiple Languages'
+            })
+            continue
+
+        try:
+            loc = Locale.parse(code)
+            name_en = loc.get_display_name('en').title()
+            name_native = loc.get_display_name(code).title()
+
+            lang_objects.append({
+                'code': code,
+                'name_en': name_en,
+                'name_native': name_native
+            })
+        except (UnknownLocaleError, ValueError):
+            if code == 'no_NO':
+                lang_objects.append({
+                    'code': 'no_NO',
+                    'name_en': 'Norwegian (Norway)',
+                    'name_native': 'Norsk (Norge)'
+                })
+            elif code == 'fr_XM':
+                lang_objects.append({
+                    'code': 'fr_XM',
+                    'name_en': 'French (Saint Martin)',
+                    'name_native': 'Français (Saint-Martin)'
+                })
+            elif code == 'en_XM':
+                lang_objects.append({
+                    'code': 'en_XM',
+                    'name_en': 'English (Saint Martin)',
+                    'name_native': 'English (Saint Martin)'
+                })
+            else:
+                lang_objects.append({
+                    'code': code,
+                    'name_en': 'Unknown lang name',
+                    'name_native': 'Unknown lang name'
+                })
+
+    # Print the table to the terminal
+    # Set the width of the columns
+    w_num, w_code, w_en, w_native = 4, 10, 30, 30
+
+    header = f"{'N':<{w_num}} | {'Lang code':<{w_code}} | {'Name on English':<{w_en}} | {'Name on native':<{w_native}}"
+    divider = f"{'-'*w_num}-+-{'-'*w_code}-+-{'-'*w_en}-+-{'-'*w_native}"
+
+    print(header)
+    print(divider)
+
+    valid_inputs = {}
+    actual_lang_codes = [code for code in clean_langs if code != 'ALL']
+
+    for idx, lang in enumerate(lang_objects, 1):
+        num_str = str(idx)
+        code = lang['code']
+        
+        valid_inputs[num_str] = code
+        valid_inputs[code.upper()] = code
+
+        row = f"{num_str:<{w_num}} | {code:<{w_code}} | {lang['name_en']:<{w_en}} | {lang['name_native']:<{w_native}}"
+        print(row)
+
+    print(divider)
+
+    # Validation and processing of multiple inputs
+    while True:
+        raw_input = input("\nEnter numbers (N) or Lang codes (separated by comma) or press Enter for 'ALL': ").strip()
+
+        # If the user has not entered anything, select 'ALL'
+        if not raw_input:
+            print("Nothing is selected; choosing the option 'ALL'.")
+            return ",".join(actual_lang_codes)
+
+        # Split by commas, remove spaces and convert to uppercase
+        tokens = [token.strip().upper() for token in raw_input.split(',') if token.strip()]
+
+        # We verify that all entered elements are valid.
+        if not all(token in valid_inputs for token in tokens):
+            print("Invalid input! Make sure all items are valid row numbers or language codes from the table.")
+            continue
+
+        # Collecting the selected codes (while maintaining order and without duplicates)
+        selected_codes = []
+        for token in tokens:
+            code = valid_inputs[token]
+            if code not in selected_codes:
+                selected_codes.append(code)
+
+        # If there is 'ALL' among the selected ones, we return ALL language codes separated by commas
+        if 'ALL' in selected_codes:
+            return ",".join(actual_lang_codes)
+
+        # Otherwise, we return the selected codes separated by commas
+        return ",".join(selected_codes)
+
+
+def get_install_language(product):
+    # Parsed languages in the xml
+    all_langs = ['en_US', 'en_GB', 'en_IL', 'en_AE', 'es_ES', 'es_MX', 'pt_BR', 'fr_FR', 'fr_CA', 'fr_MA', 'it_IT', 'de_DE', 'nl_NL', 'ru_RU', 'uk_UA', 'zh_TW', 'zh_CN', 'ja_JP', 'ko_KR', 'pl_PL', 'hu_HU', 'cs_CZ', 'tr_TR', 'sv_SE', 'nb_NO', 'fi_FI', 'da_DK', 'no_NO', 'fr_XM', 'en_XM', 'ALL']
+
+    # Detecting Current set default Os language
+    deflocal = locale.getlocale()[0]
+
+    if not deflocal:
+        deflocal = 'en_US'
+
+    oslang = get_cleaned_os_locale()
+    if args.osLanguage:
+        oslang = args.osLanguage
+    elif deflocal:
+        oslang = deflocal
+
+    if oslang in all_langs:
+        deflang = oslang
+    else:
+        deflang = 'en_US'
+
+    installLanguage = None
+    if args.installLanguage:
+        if args.installLanguage in all_langs:
+            print('\nUsing provided language code: ' + args.installLanguage)
+            installLanguage = args.installLanguage
+        else:
+            print('\nProvided language code not available: ' + args.installLanguage)
+
+    if not installLanguage:
+        if len(product['languages']) > 0:
+            print('Available languages for selected product: {}'.format(', '.join(product['languages'])))
+            print('Formatted output and selection of supported languages:')
+            installLanguage = select_language(product['languages'])
+        else:
+            print('No list of supported languages ​​was found for the selected product.')
+            print('Select language from all possible from Adobe: {}'.format(', '.join(product['languages'])))
+            while installLanguage is None:
+                val = input(
+                    f'\nEnter the desired install language, or nothing for [{deflang}]: ') or deflang
+                if val.upper() == 'ALL':
+                    installLanguage = ','.join([lang for lang in all_langs if lang != 'ALL'])
+                else:
+                    if len(val) == 5:
+                        val = val[0:2].lower() + val[2] + val[3:5].upper()
+                    elif len(val) == 3:
+                        val = val.lower()
+                    if val in all_langs:
+                        installLanguage = val
+                    else:
+                        print('{} is not available. Please use a value from the list above.'.format(val))
+            
+    if oslang != installLanguage:
+        if installLanguage != 'ALL':
+            while oslang not in all_langs:
+                print('Could not detect your default Language for MacOS.')
+                oslang = input(
+                    f'\nEnter the your OS Language, or nothing for [{installLanguage}]: ') or installLanguage
+                if oslang not in all_langs:
+                    print(
+                        '{} is not available. Please use a value from the list above.'.format(oslang))
+
+
 def run_ccdl(products, cdn, sapCodes, allowedPlatforms):
     """Run Main execution."""
     sapCode = args.sapCode.upper() if args.sapCode else None
@@ -783,57 +1041,7 @@ def run_ccdl(products, cdn, sapCodes, allowedPlatforms):
         download_APRO(versions[version], cdn)
         return
 
-    # TODO: Parse languages in the xml
-    langs = ['en_US', 'en_GB', 'en_IL', 'en_AE', 'es_ES', 'es_MX', 'pt_BR', 'fr_FR', 'fr_CA', 'fr_MA', 'it_IT', 'de_DE', 'nl_NL',
-             'ru_RU', 'uk_UA', 'zh_TW', 'zh_CN', 'ja_JP', 'ko_KR', 'pl_PL', 'hu_HU', 'cs_CZ', 'tr_TR', 'sv_SE', 'nb_NO', 'fi_FI', 'da_DK', 'ALL']
-    # Detecting Current set default Os language. Fixed.
-    deflocal = locale.getlocale()[0]
-    if not deflocal:
-        deflocal = 'en_US'
-
-    oslang = None
-    if args.osLanguage:
-        oslang = args.osLanguage
-    elif deflocal:
-        oslang = deflocal
-
-    if oslang in langs:
-        deflang = oslang
-    else:
-        deflang = 'en_US'
-
-    installLanguage = None
-    if args.installLanguage:
-        if args.installLanguage in langs:
-            print('\nUsing provided language: ' + args.installLanguage)
-            installLanguage = args.installLanguage
-        else:
-            print('\nProvided language not available: ' + args.installLanguage)
-
-    if not installLanguage:
-        print('Available languages: {}'.format(', '.join(langs)))
-        while installLanguage is None:
-            val = input(
-                f'\nEnter the desired install language, or nothing for [{deflang}]: ') or deflang
-            if len(val) == 5:
-                val = val[0:2].lower() + val[2] + val[3:5].upper()
-            elif len(val) == 3:
-                val = val.upper()
-            if val in langs:
-                installLanguage = val
-            else:
-                print(
-                    '{} is not available. Please use a value from the list above.'.format(val))
-    if oslang != installLanguage:
-        if installLanguage != 'ALL':
-            while oslang not in langs:
-                print('Could not detect your default Language for MacOS.')
-                oslang = input(
-                    f'\nEnter the your OS Language, or nothing for [{installLanguage}]: ') or installLanguage
-                if oslang not in langs:
-                    print(
-                        '{} is not available. Please use a value from the list above.'.format(oslang))
-
+    installLanguage = get_install_language(product['versions'][version])
     dest = get_download_path()
 
     print('')
