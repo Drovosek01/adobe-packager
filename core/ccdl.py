@@ -770,7 +770,7 @@ def get_cleaned_os_locale():
         return "en_US"
 
 
-def select_language(available_langs: list) -> str:
+def select_language(available_langs: list, deflang) -> str:
     # Clearing the list from 'ALL'
     base_langs = [code for code in available_langs if code != 'ALL']
 
@@ -867,7 +867,7 @@ def select_language(available_langs: list) -> str:
 
     # Validation and processing of multiple inputs
     while True:
-        raw_input = input("\nEnter numbers (N) or Lang codes (separated by comma) or press Enter for 'ALL': ").strip()
+        raw_input = input(f"\nEnter numbers (N) or Lang codes (separated by comma) or press Enter for [{deflang}]: ").strip()
 
         # If the user has not entered anything, select 'ALL'
         if not raw_input:
@@ -907,9 +907,11 @@ def get_install_language(product):
     if not deflocal:
         deflocal = 'en_US'
 
-    oslang = get_cleaned_os_locale()
-    if args.osLanguage:
-        oslang = args.osLanguage
+    oslang = None
+    installLanguage = None
+    
+    if args.useOSLanguage:
+        oslang = get_cleaned_os_locale()
     elif deflocal:
         oslang = deflocal
 
@@ -918,7 +920,6 @@ def get_install_language(product):
     else:
         deflang = 'en_US'
 
-    installLanguage = None
     if args.installLanguage:
         if args.installLanguage in all_langs:
             print('\nUsing provided language code: ' + args.installLanguage)
@@ -930,7 +931,7 @@ def get_install_language(product):
         if len(product['languages']) > 0:
             print('Available languages for selected product: {}'.format(', '.join(product['languages'])))
             print('Formatted output and selection of supported languages:')
-            installLanguage = select_language(product['languages'])
+            installLanguage = select_language(product['languages'], deflang)
         else:
             print('No list of supported languages ​​was found for the selected product.')
             print('Select language from all possible from Adobe: {}'.format(', '.join(product['languages'])))
@@ -1340,8 +1341,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-l', '--installLanguage',
                         help='Language code (eg. en_US)', action='store')
-    parser.add_argument('-o', '--osLanguage',
-                        help='OS Language code (eg. en_US)', action='store')
+    parser.add_argument('-o', '--useOSLanguage',
+                        help='OS Language code (eg. en_US)', action='store_true')
     parser.add_argument('-s', '--sapCode',
                         help='SAP code for desired product (eg. PHSP)', action='store')
     parser.add_argument('-v', '--version',
@@ -1361,12 +1362,10 @@ if __name__ == '__main__':
     parser.add_argument('--skipExisting',
                         help="Skip existing files, e.g. resuming failed downloads", action='store_true')
     parser.add_argument("--saveXML",
-                        help="The path to save the uploaded file products.xml following the transmitted path.\
-                              If the argument is passed without specifying the path, the xml file will be saved in the script folder.",
+                        help="The path to save the uploaded file products.xml following the transmitted path. If the argument is passed without specifying the path, the xml file will be saved in the script folder.",
                         nargs='?', const=True,)
     parser.add_argument("--useSavedXML",
-                        help="The path to xml-file like products.xml. If the argument is passed without \
-                              specifying the path, the xml-file will be products.xml in the script folder.",
+                        help="The path to xml-file like products.xml. If the argument is passed without specifying the path, the xml-file will be products.xml in the script folder.",
                         nargs='?', const=True,)
     parser.add_argument('--skipDependencyACR',
                         help="Skip downloading CameraRaw for package", action='store_true')
