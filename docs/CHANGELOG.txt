@@ -2,6 +2,20 @@ This is the Adobe Offline Package downloader.
 
 CHANGELOG
 
+(0.3.3)
++ Improved mechanism automatic download and install python pkg
++ Added handler exception for Ctrl+C in Terminal. Now no crash error show upon script interruption
++ Added progress-bar for downloading products.xml
++ Removed '--nativeOnly' argument and added same parameter for '--arch' argument without parameters
++ Improved handler for '--destination' argument path. Now support '~/Downloads' and other relative paths
++ Added handler for word latest for argument --version
++ Fixed message on download complete
++ Fixed condition for '--arch native'
++ Added a wrapper around the error if downloading products.xml fails
++ Improved argument '--version' for use last_<number>, last<number> etc. For example: --version last_25
++ Added arguments '--skipModulesSuperCaf' and '--skipModulesUltraCaf' for skip downloading these packages for Photoshop
++ Improved selecting languages for selected adobe product - now language list extract for certain product from products.xml
+
 (0.3.2)
 + Argument '--skipNonCorePackages' changed to '--skipNonCorePackagesAll'
 + Added argument '--skipNonCorePackages' for skip downloading packages whose type is specified as non-core in all application.json file only for the target Adobe product
