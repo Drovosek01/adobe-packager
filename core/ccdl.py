@@ -903,7 +903,7 @@ def select_language(available_langs: list, deflang) -> str:
 
 def get_install_language(product):
     # Parsed languages in the xml
-    all_langs = ['en_US', 'en_GB', 'en_IL', 'en_AE', 'es_ES', 'es_MX', 'pt_BR', 'fr_FR', 'fr_CA', 'fr_MA', 'it_IT', 'de_DE', 'nl_NL', 'ru_RU', 'uk_UA', 'zh_TW', 'zh_CN', 'ja_JP', 'ko_KR', 'pl_PL', 'hu_HU', 'cs_CZ', 'tr_TR', 'sv_SE', 'nb_NO', 'fi_FI', 'da_DK', 'no_NO', 'fr_XM', 'en_XM', 'ALL']
+    all_langs = ['en_US', 'en_GB', 'en_IL', 'en_AE', 'es_ES', 'es_MX', 'pt_BR', 'fr_FR', 'fr_CA', 'fr_MA', 'it_IT', 'de_DE', 'nl_NL', 'ru_RU', 'uk_UA', 'zh_TW', 'zh_CN', 'ja_JP', 'ko_KR', 'pl_PL', 'hu_HU', 'cs_CZ', 'tr_TR', 'sv_SE', 'nb_NO', 'fi_FI', 'da_DK', 'no_NO', 'fr_XM', 'en_XM']
 
     # Detecting Current set default Os language
     deflocal = locale.getlocale()[0]
@@ -963,6 +963,8 @@ def get_install_language(product):
                 if oslang not in all_langs:
                     print(
                         '{} is not available. Please use a value from the list above.'.format(oslang))
+
+    return installLanguage
 
 
 def run_ccdl(products, cdn, sapCodes, allowedPlatforms):
@@ -1272,7 +1274,6 @@ def run_ccdl(products, cdn, sapCodes, allowedPlatforms):
                         or 'Condition' not in pkg
                         or '[installLanguage]' not in pkg['Condition']
                         or '[installLanguage]==' + installLanguage in pkg['Condition']
-                        or '[installLanguage]==' + oslang in pkg['Condition']
                 )
 
                 if pkg.get('Type') and pkg['Type'] == 'non-core':
