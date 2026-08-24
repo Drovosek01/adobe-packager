@@ -925,7 +925,17 @@ def get_install_language(product):
         deflang = 'en_US'
 
     if args.installLanguage:
-        if args.installLanguage in all_langs:
+        if len(product['languages']) > 0:
+            if args.installLanguage in product['languages']:
+                print('\nUsing provided language code: ' + args.installLanguage)
+                installLanguage = args.installLanguage
+            elif args.installLanguage == 'ALL':
+                print('\nUsing provided language code: ' + args.installLanguage)
+                print(",".join(product['languages']))
+                return ",".join(product['languages'])
+            else:
+                print('\nProvided language code not available for selected product: ' + args.installLanguage)
+        elif args.installLanguage in all_langs:
             print('\nUsing provided language code: ' + args.installLanguage)
             installLanguage = args.installLanguage
         else:
