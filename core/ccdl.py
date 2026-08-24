@@ -19,36 +19,40 @@ from xml.etree import ElementTree as ET
 import requests
 import signal
 
-def ensure_import(import_name: str, package_name: str = None):
+def ensure_import(import_name: str, package_name: str = None, attr_name: str = None):
     """
     Checks for the presence of a module. If it is not installed,
-    attempts to install it via pip and import it again. 
+    attempts to install it via pip and import it again. Optionally retrieves
+    a specific attribute or class from the module.
 
     :param import_name: The name used for importing (e.g., 'babel' or 'PIL')
     :param package_name: The pip package name, if different from import_name (e.g., 'Pillow')
-    :return: The Python module
+    :param attr_name: Optional attribute, class, or function name to extract from the imported module (e.g., 'tqdm' from 'tqdm')
+    :return: The Python module, or the specific attribute/class if attr_name is specified
     """
     if package_name is None:
         package_name = import_name
 
     try:
-        return importlib.import_module(import_name)
+        mod = importlib.import_module(import_name)
     except ImportError:
         print(f"Module '{import_name}' not found. Trying to install: {package_name}...")
         subprocess.run([sys.executable, "-m", "pip", "install", "--user", "--break-system-packages", package_name], check=True)
         try:
-            return importlib.import_module(import_name)
+            mod = importlib.import_module(import_name)
         except ImportError:
             sys.exit(f"""Failed to import '{import_name}' even after installation!
 Install it manually:
     pip install {package_name}
 Or check project status: https://pypi.org/project/{package_name}/""")
 
+    return getattr(mod, attr_name) if attr_name else mod
+
 babel = ensure_import("babel")
 from babel import Locale
 from babel.core import UnknownLocaleError
 
-tqdm = ensure_import("tqdm")
+tqdm = ensure_import("tqdm", attr_name="tqdm")
 
 
 # ===== ===== =====
