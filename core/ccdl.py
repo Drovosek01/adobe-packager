@@ -1012,7 +1012,7 @@ def run_ccdl(products, cdn, sapCodes, allowedPlatforms):
         version_match = re.fullmatch(r'(last|latest|newest)_?(\d+)', args.version, re.IGNORECASE)
         if version_match:
             # Extract the major version number from the matched pattern (e.g., '25' from 'last25')
-            requested_major_version = version_match.group(1)
+            requested_major_version = version_match.group(2)
             print('\nRequested latest version from {}.x.x'.format(requested_major_version))
             for candidate_version in versions:
                 # Extract the major version from the candidate version (e.g., '25' from '25.1.0')
