@@ -411,7 +411,7 @@ def download_APRO(appInfo, cdn):
     print('sapCode: ' + sapCode)
     print('version: ' + version)
     print('installLanguage: ' + 'ALL')
-    print('dest: ' + os.path.join(dest, name))
+    print('destination: ' + os.path.join(dest, name))
 
     print('\nDownloading...\n')
 
@@ -1094,13 +1094,15 @@ def run_ccdl(products, cdn, sapCodes, allowedPlatforms):
         0, {'sapCode': prodInfo['sapCode'], 'version': prodInfo['productVersion'], 'buildGuid': prodInfo['buildGuid'], "isDependency": False})
     apPlatform = prodInfo['apPlatform']
 
+    langNameForFile = "Multilingual" if "," in installLanguage else installLanguage
+
     if args.notWrapInApp:
-        dest_folder_name = 'Adobe {}_{}-{}-{}'.format(sapCode, version, installLanguage, apPlatform)
+        dest_folder_name = 'Adobe {}_{}-{}-{}'.format(sapCode, version, langNameForFile, apPlatform)
         result_path = os.path.join(dest, dest_folder_name)
         os.makedirs(result_path, exist_ok=True)
         products_dir = os.path.join(result_path, 'products')
     else:
-        install_app_name = 'Install {}_{}-{}-{}.app'.format(sapCode, version, installLanguage, apPlatform)
+        install_app_name = 'Install {}_{}-{}-{}.app'.format(sapCode, version, langNameForFile, apPlatform)
         result_path = os.path.join(dest, install_app_name)
         applescript_path = os.path.join(script_dir, "install_script.applescript")
 
@@ -1129,7 +1131,7 @@ def run_ccdl(products, cdn, sapCodes, allowedPlatforms):
     print('sapCode: ' + sapCode)
     print('version: ' + version)
     print('installLanguage: ' + installLanguage)
-    print('dest: ' + result_path)
+    print('destination: ' + result_path)
 
     print('\nPreparing...\n')
 
@@ -1278,13 +1280,27 @@ def run_ccdl(products, cdn, sapCodes, allowedPlatforms):
             else:
                 if (args.skipNonCorePackages and not p['isDependency']) or args.skipNonCorePackagesAll:
                     continue
-                # TODO: actually parse `Condition` and check it properly (and maybe look for & add support for conditions other than installLanguage)
-                language_is_suitable = (
-                        installLanguage == "ALL"
+                if (args.downloadOnlyInstallLang and not p['isDependency']):
+                    # TODO: actually parse `Condition` and check it properly (and maybe look for & add support for conditions other than installLanguage)
+
+                    # Split `installLanguage` by commas and trim whitespace
+                    selected_langs = [lang.strip() for lang in installLanguage.split(',') if lang.strip()]
+                    selected_langs_upper = [lang.upper() for lang in selected_langs]
+                    # Checking special flags ALL / MUL
+                    is_all_or_mul = "ALL" in selected_langs_upper or "MUL" in selected_langs_upper
+
+                    # Check if at least one language matches pkg['Condition']
+                    condition = pkg.get('Condition', '')
+                    has_matching_lang = any('[installLanguage]==' + lang in condition for lang in selected_langs)
+
+                    language_is_suitable = (
+                        is_all_or_mul
                         or 'Condition' not in pkg
-                        or '[installLanguage]' not in pkg['Condition']
-                        or '[installLanguage]==' + installLanguage in pkg['Condition']
-                )
+                        or '[installLanguage]' not in condition
+                        or has_matching_lang
+                    )
+                else:
+                    language_is_suitable = True
 
                 if pkg.get('Type') and pkg['Type'] == 'non-core':
                     noncore_pkg_count += 1
@@ -1355,7 +1371,9 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-l', '--installLanguage',
-                        help='Language code (eg. en_US)', action='store')
+                        help='Language code (eg. en_US) or "ALL" for use all languages', action='store')
+    parser.add_argument('--downloadOnlyInstallLang',
+                        help='Download only the installation language(s) but not all supported product languages. But if selected to install all languages - will download all it.', action='store_true')
     parser.add_argument('-o', '--useOSLanguage',
                         help='OS Language code (eg. en_US)', action='store_true')
     parser.add_argument('-s', '--sapCode',
