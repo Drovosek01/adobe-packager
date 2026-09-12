@@ -89,7 +89,7 @@ download_python_auto() {
     if [ "$major" -eq 10 ]; then
         if [ "$minor" -ge 15 ]; then
             # for macOS 10.15+
-            url="https://www.python.org/ftp/python/3.14.6/python-3.14.6-macos11.pkg"
+            url="https://www.python.org/ftp/python/3.14.7/python-3.14.7-macos11.pkg"
         elif [ "$minor" -ge 13 ]; then
             # for macOS 10.13+
             url="https://www.python.org/ftp/python/3.13.14/python-3.13.14-macos11.pkg"
@@ -99,7 +99,7 @@ download_python_auto() {
         fi
     elif [ "$major" -ge 11 ]; then
         # for macOS 11+
-        url="https://www.python.org/ftp/python/3.14.6/python-3.14.6-macos11.pkg"
+        url="https://www.python.org/ftp/python/3.14.7/python-3.14.7-macos11.pkg"
     fi
 
     # If the macOS version is too old (older than 10.9)
@@ -145,35 +145,45 @@ download_then_install_python() {
     fi
 }
 
-if [ -z "$PYTHON_PATH" ]; then
-    echo "python3 not found!"
-    download_then_install_python
-    # echo "${CYAN}installing python3...${RESET}"
-    # if ! command -v brew > /dev/null 2>&1; then
-    # 	echo | /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"
-    # fi
-    # brew install python
-else
-    # Checking the python3 binary
-    # If the python3 binary is located in the Frameworks folder, it means that it is most likely a full-fledged python3 binary.
-    # Otherwise, we check the digital signature of the binary, and if it is signed by Apple, then it is a stub binary for installing Xcode CLT.
-    # All these checks are done so as not to try to execute any code using the python3 binary, which will open the Xcode CLT installation prompt window and this will confuse inexperienced users, as well as downloading and installing Xcode CLT longer than downloading and installing only the Python package from the official website.
+# Diagnostics of the existence of a working Python3
+is_stub_python() {
+    local py_bin="$1"
     
-    if [[ "$PYTHON_PATH" == /Library/Frameworks/Python.framework/* ]]; then
-        echo "${CYAN}python3 found!${RESET}"
-    else
-        SIGNATURE_INFO="$(codesign -dv --verbose=4 "$PYTHON_PATH" 2>&1)"
+    # 1. If the path doesn't exist, it's not a valid Python
+    if [ -z "$py_bin" ] || [ ! -x "$py_bin" ]; then
+        return 0 # is stub / missing
+    fi
+    
+    # 2. If Python is located in /Library/Frameworks/ or /usr/local/ or Homebrew, it's a 100% legitimate Python
+    if [[ "$py_bin" == /Library/Frameworks/Python.framework/* ]] || [[ "$py_bin" == /opt/homebrew/* ]] || [[ "$py_bin" == /usr/local/* ]]; then
+        return 1 # NOT a stub
+    fi
 
-        if echo "$SIGNATURE_INFO" | grep -q "Authority=Software Signing" && echo "$SIGNATURE_INFO" | grep -q "Authority=Apple Code Signing Certification Authority"; then
-            echo "python3 found but non-functional" # probably xcode-select stub on Catalina+
-            download_then_install_python
-        else
-            echo "${CYAN}python3 found!${RESET}"
+    # 3. Check if the Python is located in /usr/bin/python3, which is a stub on macOS
+    if [[ "$py_bin" == "/usr/bin/python3" ]]; then
+        # If xcode-select is not configured to point to a full Xcode / CLT path, then this is a stub
+        if ! xcode-select -p >/dev/null 2>&1; then
+            return 0 # is stub
+        fi
+        
+        # Additional check of Apple Mac OS Component signature (characteristic of /usr/bin stubs)
+        local sig="$(codesign -dv --verbose=4 "$py_bin" 2>&1)"
+        if echo "$sig" | grep -q "Apple Mac OS Component" || echo "$sig" | grep -q "Software Signing"; then
+            return 0 # is stub
         fi
     fi
+
+    return 1 # NOT a stub
+}
+
+if is_stub_python "$PYTHON_PATH"; then
+    echo "${CYAN}Functional python3 not found (or stub detected). Installing official Python PKG...${RESET}"
+            download_then_install_python
+        else
+    echo "${CYAN}python3 found: $PYTHON_PATH${RESET}"
 fi
 
-PYTHON_EXEC="${PYTHON_PATH:-python3}"
+PYTHON_EXEC="${PYTHON_PATH:-/Library/Frameworks/Python.framework/Versions/Current/bin/python3}"
 
 # --- DEPENDENCY CHECKING ---
 $PYTHON_EXEC -c 'import requests' > /dev/null 2>&1
@@ -183,7 +193,12 @@ else
     echo "${CYAN}installing requests 2.28.2...${RESET}"
     $PYTHON_EXEC -m pip install requests==2.28.2 --user
 fi
-$PYTHON_EXEC -c "import tqdm" || pip3 install --user tqdm 
+
+$PYTHON_EXEC -c "import tqdm" > /dev/null 2>&1
+if [ $? -ne 0 ]; then
+    echo "${CYAN}installing tqdm...${RESET}"
+    $PYTHON_EXEC -m pip install tqdm --user
+fi
 
 # --- CHECKING THE AVAILABILITY AND LAUNCHING OF THE CCDL STRUCTURE ---
 ensure_ccdl_py_exists
