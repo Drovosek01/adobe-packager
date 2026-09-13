@@ -929,10 +929,14 @@ def get_install_language(product):
             if args.installLanguage in product['languages']:
                 print('\nUsing provided language code: ' + args.installLanguage)
                 installLanguage = args.installLanguage
+            elif len(product['languages']) == 1 and product['languages'][0] == 'mul':
+                print('\nSelected product have multiple languages under the hood.')
+                print('\nUsing multiple languages + provided language code: mul,' + args.installLanguage)
+                installLanguage = "mul," + args.installLanguage
             elif args.installLanguage == 'ALL':
                 print('\nUsing provided language code: ' + args.installLanguage)
                 print(",".join(product['languages']))
-                return ",".join(product['languages'])
+                installLanguage = ",".join(product['languages'])
             else:
                 print('\nProvided language code not available for selected product: ' + args.installLanguage)
         elif args.installLanguage in all_langs:
@@ -963,11 +967,11 @@ def get_install_language(product):
                         installLanguage = val
                     else:
                         print('{} is not available. Please use a value from the list above.'.format(val))
-            
+
     if oslang != installLanguage:
         if installLanguage != 'ALL':
             while oslang not in all_langs:
-                print('Could not detect your default Language for MacOS.')
+                print('Could not detect your default anguage for MacOS.')
                 oslang = input(
                     f'\nEnter the your OS Language, or nothing for [{installLanguage}]: ') or installLanguage
                 if oslang not in all_langs:
